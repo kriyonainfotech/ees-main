@@ -1,0 +1,591 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box !important;
+}
+.my-40 {
+  margin: 110px 0 !important;
+}
+.mt-40 {
+  margin-top: 110px !important;
+}
+body {
+  font-family: "Poppins", sans-serif !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+  background-color: #ffffff !important;
+  font-size: 16px !important;
+}
+a {
+  text-decoration: none !important;
+  color: #001d08 !important;
+}
+.input-field {
+  @apply block w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-red-500 focus:border-red-500;
+}
+ul {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+:root {
+  --bg-primary: #e92626 !important;
+  --bg-secondary: #00a455 !important;
+  --bg-blue: #0245b1 !important;
+  --bg-black: #000 !important;
+  --bg-gray: #f3f0f0;
+}
+.bg-primary {
+  background-color: var(--bg-primary) !important;
+}
+.bg-orange {
+  background-color: var(--bg-primary) !important;
+}
+.bg-orange-100 {
+  background-color: #ffd8ca !important;
+}
+.bg-orange-500 {
+  background-color: #fc6a10 !important;
+}
+.bg-green-100 {
+  background-color: #0ab160 !important;
+}
+.h-70 {
+  height: 500px;
+}
+.bg-green {
+  background-color: var(--bg-secondary) !important;
+}
+.bg-gray {
+  background-color: var(--bg-gray) !important;
+}
+.bg-blue {
+  background-color: var(--bg-blue) !important;
+}
+.bg-blue-100 {
+  background-color: #265bb1 !important;
+}
+.text-orange {
+  color: var(--bg-primary) !important;
+}
+.text-green {
+  color: var(--bg-secondary) !important;
+}
+.text-blue {
+  color: var(--bg-blue) !important;
+}
+.text-gray {
+  color: #646464 !important;
+}
+
+.border-orange {
+  border: 1px solid var(--bg-primary) !important;
+}
+.border-green {
+  border: 1px solid var(--bg-secondary) !important;
+}
+.border-green {
+  border: 1px solid var(--bg-blue) !important;
+}
+.border-black {
+  border: 1px solid var(--bg-black) !important;
+}
+
+.btn-outline-orange:hover {
+  background-color: var(--bg-primary) !important;
+  color: white !important;
+}
+.btn-outline-green:hover {
+  background-color: var(--bg-secondary) !important;
+  color: white !important;
+}
+p {
+  margin: 0 !important;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0 !important;
+}
+.box {
+  display: -webkit-box;
+  -webkit-line-clamp: 5; /* Number of lines that fit within the box */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+}
+.hidden {
+  display: none !important;
+}
+.text {
+  display: -webkit-box;
+  -webkit-line-clamp: 1; /* Number of lines to display */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+}
+
+.manu ul li a:hover {
+  color: var(--bg-primary) !important;
+}
+.offcanvas {
+  width: 300px !important;
+}
+.offcanvas-body ul li:hover a {
+  color: #fff;
+}
+
+.Select {
+  background-color: #e92626 !important;
+}
+.stdropdown-container {
+  padding: 11.5px 20px;
+  background-color: #f3f4f6 !important;
+  border: 1px solid #dee2e6;
+  border-radius: 7px;
+  margin-top: 10px;
+  position: relative;
+}
+.stdropdown-input input::placeholder {
+  color: #6b7280 !important;
+  font-family: "Poppins", sans-serif !important;
+  font-weight: 500 !important;
+  font-style: normal !important;
+  font-size: 15px;
+}
+.stdropdown-input input {
+  background-color: transparent !important;
+  border: none;
+  outline: none;
+}
+.stdropdown-menu {
+  position: absolute !important;
+  transform: translateY(15px) !important;
+  left: 0;
+}
+
+/* slic slider Card  start*/
+
+.wrapper {
+  padding: 30px 0;
+}
+.slick-slide {
+  width: 205px !important;
+}
+/* Default slide */
+.center-slider .slick-slide {
+  color: #fff;
+  height: 300px;
+  margin: 0 15px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: scale(0.8);
+  transition: all 0.4s ease-in-out;
+}
+
+.center-slider .slick-slide,
+.center-slider
+  .slick-slide[aria-hidden="true"]:not(.slick-cloned)
+  ~ .slick-cloned[aria-hidden="true"] {
+  transform: scale(0.8, 0.8);
+  transition: all 0.4s ease-in-out;
+}
+
+/* Active center slide (You can change anything here for cenetr slide)*/
+.center-slider .slick-center,
+.center-slider
+  .slick-slide[aria-hidden="true"]:not([tabindex="-1"])
+  + .slick-cloned[aria-hidden="true"] {
+  transform: scale(1.1);
+}
+.center-slider .slick-current.slick-active {
+  transform: scale(1.1);
+}
+
+.slick-next,
+.slick-prev {
+  z-index: 5;
+}
+.slick-next {
+  right: -9px;
+  top: 150px;
+}
+.slick-prev {
+  left: -15px;
+  top: 150px;
+}
+.slick-next:before,
+.slick-prev:before {
+  color: #00a455;
+  font-size: 26px;
+}
+/* slic slider Card  end*/
+
+/* pfp :checke  */
+.checkbox-con {
+  /* margin: 10px; */
+
+  color: white;
+}
+
+.checkbox-con input[type="checkbox"] {
+  appearance: none;
+  width: 48px;
+  height: 27px;
+  border: 2px solid #ff0000;
+  border-radius: 20px;
+  background: #f1e1e1;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.checkbox-con input[type="checkbox"]::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  background: rgba(234, 7, 7, 0.5);
+  border: 2px solid #ea0707;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 0;
+  transform: translate(13%, 15%);
+  transition: all 0.3s ease-in-out;
+}
+
+.checkbox-con input[type="checkbox"]::after {
+  content: url("data:image/svg+xml,%3Csvg xmlns='://www.w3.org/2000/svg' width='23' height='23' viewBox='0 0 23 23' fill='none'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M6.55021 5.84315L17.1568 16.4498L16.4497 17.1569L5.84311 6.55026L6.55021 5.84315Z' fill='%23EA0707' fill-opacity='0.89'/%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M17.1567 6.55021L6.55012 17.1568L5.84302 16.4497L16.4496 5.84311L17.1567 6.55021Z' fill='%23EA0707' fill-opacity='0.89'/%3E%3C/svg%3E");
+  position: absolute;
+  top: 0px;
+  left: 20px;
+}
+
+.checkbox-con input[type="checkbox"]:checked {
+  border: 2px solid #02c202;
+  background: #e2f1e1;
+}
+
+.checkbox-con input[type="checkbox"]:checked::before {
+  background: rgba(2, 194, 2, 0.5);
+  border: 2px solid #02c202;
+
+  transform: translate(180%, 20%);
+  transition: all 0.3s ease-in-out;
+}
+
+.checkbox-con label {
+  margin-left: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* card-banners */
+.card-banners {
+  position: relative;
+}
+.banner-Btn {
+  position: absolute;
+  top: 7%;
+  right: 0%;
+  transform: translate(-50%, -50%);
+}
+input {
+  outline: none !important;
+}
+/* card-banners end */
+.webcam-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000; /* Ensure it appears above other content */
+}
+
+.webcam-popup {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  position: relative;
+}
+
+.webcam-popup .webcam {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.webcam-popup .btn {
+  margin: 5px;
+}
+
+/* loader */
+/* From Uiverse.io by SchawnnahJ */
+.loader {
+  position: relative;
+  width: 2.5em;
+  height: 2.5em;
+  transform: rotate(165deg);
+}
+
+.loader:before,
+.loader:after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 0.25em;
+  transform: translate(-50%, -50%);
+}
+
+.loader:before {
+  animation: before8 2s infinite;
+}
+
+.loader:after {
+  animation: after6 2s infinite;
+}
+
+@keyframes before8 {
+  0% {
+    width: 0.5em;
+    box-shadow: 1em -0.5em rgba(225, 20, 98, 0.75),
+      -1em 0.5em rgba(111, 202, 220, 0.75);
+  }
+
+  35% {
+    width: 2.5em;
+    box-shadow: 0 -0.5em rgba(225, 20, 98, 0.75),
+      0 0.5em rgba(111, 202, 220, 0.75);
+  }
+
+  70% {
+    width: 0.5em;
+    box-shadow: -1em -0.5em rgba(225, 20, 98, 0.75),
+      1em 0.5em rgba(111, 202, 220, 0.75);
+  }
+
+  100% {
+    box-shadow: 1em -0.5em rgba(225, 20, 98, 0.75),
+      -1em 0.5em rgba(111, 202, 220, 0.75);
+  }
+}
+
+@keyframes after6 {
+  0% {
+    height: 0.5em;
+    box-shadow: 0.5em 1em rgba(61, 184, 143, 0.75),
+      -0.5em -1em rgba(233, 169, 32, 0.75);
+  }
+
+  35% {
+    height: 2.5em;
+    box-shadow: 0.5em 0 rgba(61, 184, 143, 0.75),
+      -0.5em 0 rgba(233, 169, 32, 0.75);
+  }
+
+  70% {
+    height: 0.5em;
+    box-shadow: 0.5em -1em rgba(61, 184, 143, 0.75),
+      -0.5em 1em rgba(233, 169, 32, 0.75);
+  }
+
+  100% {
+    box-shadow: 0.5em 1em rgba(61, 184, 143, 0.75),
+      -0.5em -1em rgba(233, 169, 32, 0.75);
+  }
+}
+
+.loader {
+  position: absolute;
+  top: calc(50% - 1.25em);
+  left: calc(50% - 1.25em);
+}
+
+/* bell notification */
+
+.bell-notification-container {
+  position: relative;
+}
+
+.notification-bell-link {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.notification-count {
+  position: absolute;
+  top: -10px;
+  right: 0;
+  background-color: red;
+  color: white;
+  border-radius: 50%;
+  padding: 1px 5px;
+  font-size: 10px;
+}
+
+.notification-dropdown {
+  position: absolute;
+  top: 140%;
+  right: -50%;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 1em;
+  width: 360px;
+  max-height: 350px; /* Set max height */
+  overflow-y: auto; /* Enable scrolling */
+}
+
+.notification-dropdown ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Hide scrollbar */
+.notification-dropdown::-webkit-scrollbar {
+  display: none; /* For Chrome, Safari, and Opera */
+}
+
+.notification-dropdown {
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; /* Firefox */
+}
+
+.notification-dropdown li {
+  padding: 0.5em 0;
+  border-bottom: 1px solid #eee;
+}
+
+.notification-dropdown li:last-child {
+  border-bottom: none;
+}
+
+/* modal offer */
+.modal-dimmed .modal-content {
+  opacity: 0.5;
+}
+
+.popup-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1050; /* Above the modal but below the popup */
+}
+
+.popup {
+  width: 300px;
+  height: 200px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1060; /* Above the backdrop */
+  background-color: white;
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.social-links .s-icon:hover {
+  /* background: #000; */
+  color: var(--bg-primary) !important;
+  font-weight: 900;
+}
+
+/* Update the table container styles */
+.table-container {
+  max-height: 70vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.table-container table {
+  width: 100%;
+  border-collapse: collapse; /* Changed from separate to collapse */
+  border-spacing: 0;
+}
+
+.table-container thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.table-container thead th {
+  border: 1px solid #dee2e6; /* Added border to all sides */
+  background: rgb(189, 189, 190);
+  box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+  padding: 12px;
+}
+
+/* Add borders to table cells */
+.table-container td,
+.table-container th {
+  border: 1px solid #dee2e6;
+  padding: 12px;
+}
+
+/* Add hover effect on tbody rows */
+.table-container tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+/* Keep borders visible on hover */
+.table-container tbody tr:hover td,
+.table-container tbody tr:hover th {
+  border: 1px solid #dee2e6;
+}
+
+/* Ensure last row border is visible */
+.table-container tbody tr:last-child td,
+.table-container tbody tr:last-child th {
+  border-bottom: 1px solid #dee2e6;
+}
+
+/* For Firefox */
+.table-container {
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f1f1f1;
+}
+
+/* For Chrome, Safari, and Opera */
+.table-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

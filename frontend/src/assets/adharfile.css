@@ -1,0 +1,31 @@
+.custom-file-box {
+  position: relative;
+  border: 2px solid #ccc;
+  padding: 20px;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  text-align: center;
+}
+
+.custom-file-box input[type="file"] {
+  opacity: 0; /* Hide the default input field */
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  cursor: pointer;
+}
+
+.custom-file-box:hover {
+  background-color: #e6f7ff; /* Light blue background on hover */
+}
+
+.custom-file-box small {
+  font-size: 12px;
+  color: #777;
+}
+
+.custom-file-box img {
+  border-radius: 8px;
+}
