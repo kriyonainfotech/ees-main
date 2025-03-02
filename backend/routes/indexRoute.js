@@ -13,6 +13,5 @@ routes.use("/payment", require("./paymentRoute"));
 routes.use("/support", require("./supportRoute"));
 routes.use("/remark", require("./remarkRoute"));
 routes.use("/withdrawal", require("./withdrawalRoute"));
-routes.use("/notify", require("./notification"));
 
 module.exports = routes;
