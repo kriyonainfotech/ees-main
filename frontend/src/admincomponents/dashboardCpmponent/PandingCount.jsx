@@ -6,7 +6,7 @@ const PandingCount = ({ pandingcnt }) => {
     const navigate = useNavigate()
     return (
         <div
-            className="shadow-lg rounded-xl p-4 bg-white hover:shadow-xl transition duration-300 cursor-pointer"
+            className="border rounded-xl p-4 bg-white hover:shadow-lg transition duration-300 cursor-pointer"
             onClick={() => navigate("/admin/aprove")}
         >
             <div className="flex items-center space-x-4">

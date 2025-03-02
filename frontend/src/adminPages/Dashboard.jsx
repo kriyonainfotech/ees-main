@@ -70,25 +70,25 @@ const Dashboard = () => {
                 <h3 className="">Dashboard</h3>
               </div>
               <div className="col-12 d-flex flex-wrap pt-3">
-                <div className="col-12 col-md-6 col-lg-3 p-1">
+                <div className="col-12 col-md-6 col-lg-4 p-1">
                   <PandingCount
                     pandingcnt={pandingcnt}
                     label="Approved Admins"
                   />
                 </div>
-                <div className="col-12 col-md-6 col-lg-3 p-1">
+                <div className="col-12 col-md-6 col-lg-4 p-1">
                   <UserCount Users={Users} label="Pending Admins" />
                 </div>
-                <div className="col-12 col-md-6 col-lg-3 p-1">
+                <div className="col-12 col-md-6 col-lg-4 p-1">
                   <AdminCount admincnt={admincnt} label="Total Users" />
                 </div>
-                <div className="col-12 col-md-6 col-lg-3 p-1">
+                <div className="col-12 col-md-6 col-lg-4 p-1">
                   <PendingWithdrwals label="Total Users" />
                 </div>
-                <div className="col-12 col-md-6 col-lg-3 p-1">
+                <div className="col-12 col-md-6 col-lg-4 p-1">
                   <PendingKYCs label="Pending e-KYC" />
                 </div>
-                <div className="col-12 col-md-6 col-lg-3 p-1">
+                <div className="col-12 col-md-6 col-lg-4 p-1">
                   <PaidUsersCtn label="Payment Invoices" />
                 </div>
               </div>

@@ -40,12 +40,10 @@ const Work = () => {
     }
 
     setLoading(true);
-    let endpoint = "";
-    if (requestType === "Sended Request") {
-      endpoint = `${backend_API}/request/getSentRequests`;
-    } else {
-      endpoint = `${backend_API}/request/getReceivedRequests`;
-    }
+    let endpoint =
+      requestType === "Sended Request"
+        ? `${backend_API}/request/getSentRequests`
+        : `${backend_API}/request/getReceivedRequests`;
 
     try {
       const response = await axios.get(endpoint, {
@@ -54,17 +52,27 @@ const Work = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-      console.log(response.data, "response.data");
-      if (response.status === 200 && response.data) {
-        if (requestType === "Sended Request") {
-          const sortedRequests = response.data.sendedRequests.sort((a, b) => {
-            const priority = { pending: 1, accepted: 2, completed: 3, rated: 4, rejected: 5 };
-            return (priority[a.status] || 99) - (priority[b.status] || 99);
-          });
 
+      console.log(response.data, "response.data");
+
+      if (response.status === 200 && response.data) {
+        const priority = { pending: 1, accepted: 2, completed: 3, rated: 4, rejected: 5 };
+
+        const sortedRequests = (requestType === "Sended Request"
+          ? response.data.sendedRequests
+          : response.data.receivedRequests
+        )
+          ?.sort((a, b) => {
+            // Sort by status priority first, then by createdAt (most recent first)
+            const statusComparison = (priority[a.status] || 99) - (priority[b.status] || 99);
+            if (statusComparison !== 0) return statusComparison;
+            return new Date(b.date) - new Date(a.date); // Recent requests first
+          }) || [];
+
+        if (requestType === "Sended Request") {
           setSendedRequest(sortedRequests);
         } else {
-          setReceivedRequest(response.data.receivedRequests || []);
+          setReceivedRequest(sortedRequests);
         }
       } else {
         toast.error(response?.data?.message || "Error fetching requests");

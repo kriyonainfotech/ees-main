@@ -13,7 +13,7 @@ import { RxCrossCircled } from "react-icons/rx";
 
 const backend_API = import.meta.env.VITE_API_URL;
 
-const UserDetailsModal = ({ user, onClose, onApprove }) => {
+const UserDetailsModal = ({ user, onClose, onApprove, setSelectedUser }) => {
   const [zoomedIndex, setZoomedIndex] = useState(null);
   const [zoomedProfile, setZoomedProfile] = useState(false);
   const [permanentAddress, setPermanentAddress] = useState(
@@ -74,14 +74,62 @@ const UserDetailsModal = ({ user, onClose, onApprove }) => {
     );
   };
 
-  const handleDeleteAadhar = async () => {
+  // const handleDeleteAadhar = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const response = await axios.post(`${backend_API}/auth/reset-ekyc`, {
+  //       data: { userId }, // ✅ Correct way to send data in DELETE request
+  //     });
+  //     if (response.status === 200) {
+  //       toast.success(response?.data?.message);
+  //       onClose(); // Close modal after successful deletion
+  //     }
+  //   } catch (error) {
+  //     console.error("Error deleting Aadhar:", error);
+  //     toast.error(
+  //       error?.response?.data?.message || "Failed to delete Aadhar images"
+  //     );
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const handleReseteKYC = () => {
+    toast.info(
+      <div>
+        Are you sure you want to reset eKYC? This action will permanently remove all KYC related data.
+
+        <div className="flex gap-4 mt-2">
+          <button
+            className="bg-red-600 text-white px-3 py-1 rounded-md"
+            onClick={confirmDeleteAadhar}
+          >
+            Yes
+          </button>
+          <button
+            className="bg-gray-400 text-white px-3 py-1 rounded-md"
+            onClick={() => toast.dismiss()}
+          >
+            No
+          </button>
+        </div>
+      </div>,
+      { autoClose: false, closeOnClick: false }
+    );
+  };
+
+  const confirmDeleteAadhar = async () => {
+    toast.dismiss(); // Close the confirmation toast
     try {
       setLoading(true);
-      const response = await axios.delete(`${backend_API}/auth/delete-aadhar`, {
-        data: { userId }, // ✅ Correct way to send data in DELETE request
+      const response = await axios.post(`${backend_API}/auth/reset-ekyc`, {
+        userId: userId,
       });
+
       if (response.status === 200) {
         toast.success(response?.data?.message);
+        const updatedUser = { ...user, ekyc: null, frontAadhar: null, backAadhar: null };
+        setSelectedUser(updatedUser);
         onClose(); // Close modal after successful deletion
       }
     } catch (error) {
@@ -93,6 +141,7 @@ const UserDetailsModal = ({ user, onClose, onApprove }) => {
       setLoading(false);
     }
   };
+
 
   const updateProfilePic = async () => {
     try {
@@ -238,16 +287,16 @@ const UserDetailsModal = ({ user, onClose, onApprove }) => {
                       )}
                     </div>
                   ) : (
-                    <span className="text-red-500">Photos Deleted</span>
+                    <span className="">N/A</span>
                   )}
                   {aadharImages.filter(Boolean).length > 0 && (
                     <div className="flex flex-col justify-center">
                       <button
-                        onClick={handleDeleteAadhar}
-                        className="bg-red-500 text-white btn-sm px-4 py-1 rounded"
+                        onClick={handleReseteKYC}
+                        className="bg-yellow-500 text-white btn-sm px-4 py-1 rounded"
                         disabled={loading}
                       >
-                        {loading ? "Deleting..." : "Delete Aadhar"}
+                        {loading ? "Deleting..." : "Reset e-KYC"}
                       </button>
                     </div>
                   )}
@@ -259,7 +308,7 @@ const UserDetailsModal = ({ user, onClose, onApprove }) => {
                   Permanent Address
                 </td>
                 <td className="border border-gray-300 px-4 py-2">
-                  {permanentAddress}
+                  {permanentAddress ? permanentAddress : 'N/A'}
                 </td>
               </tr>
               <tr>
@@ -267,7 +316,7 @@ const UserDetailsModal = ({ user, onClose, onApprove }) => {
                   Aadhar Number
                 </td>
                 <td className="border border-gray-300 px-4 py-2">
-                  {aadharNumber}
+                  {aadharNumber ? aadharNumber : 'N/A'}
                 </td>
               </tr>
               <tr>
@@ -275,7 +324,7 @@ const UserDetailsModal = ({ user, onClose, onApprove }) => {
                   Account Holder Name
                 </td>
                 <td className="border border-gray-300 px-4 py-2">
-                  {user?.ekyc?.accountHolderName || "Not Provided"}
+                  {user?.ekyc?.accountHolderName || "N/A"}
                 </td>
               </tr>
               <tr>
@@ -283,7 +332,7 @@ const UserDetailsModal = ({ user, onClose, onApprove }) => {
                   Bank Account Number
                 </td>
                 <td className="border border-gray-300 px-4 py-2">
-                  {user?.ekyc?.bankAccountNumber || "Not Provided"}
+                  {user?.ekyc?.bankAccountNumber || "N/A"}
                 </td>
               </tr>
               <tr>
@@ -291,7 +340,7 @@ const UserDetailsModal = ({ user, onClose, onApprove }) => {
                   IFSC Code
                 </td>
                 <td className="border border-gray-300 px-4 py-2">
-                  {user?.ekyc?.ifscCode || "Not Provided"}
+                  {user?.ekyc?.ifscCode || "N/A"}
                 </td>
               </tr>
               <tr>
@@ -307,7 +356,7 @@ const UserDetailsModal = ({ user, onClose, onApprove }) => {
                       className="cursor-pointer"
                     />
                   ) : (
-                    <span className="text-red-500">Not Uploaded</span>
+                    <span className="">N/A</span>
                   )}
                 </td>
               </tr>
@@ -324,7 +373,7 @@ const UserDetailsModal = ({ user, onClose, onApprove }) => {
                       className="cursor-pointer"
                     />
                   ) : (
-                    <span className="text-red-500">Not Uploaded</span>
+                    <span className="text-gray-800">N/A</span>
                   )}
                 </td>
               </tr>
@@ -341,7 +390,7 @@ const UserDetailsModal = ({ user, onClose, onApprove }) => {
                       className="cursor-pointer"
                     />
                   ) : (
-                    <span className="text-red-500">Not Uploaded</span>
+                    <span className="">N/A</span>
                   )}
                 </td>
               </tr>
@@ -350,7 +399,7 @@ const UserDetailsModal = ({ user, onClose, onApprove }) => {
                   eKYC Status
                 </td>
                 <td className="border border-gray-300 px-4 py-2">
-                  {user?.ekyc?.status || "Pending"}
+                  {user?.ekyc ? user?.ekyc?.status : "N/A"}
                 </td>
               </tr>
             </tbody>
@@ -540,7 +589,7 @@ const AllUsers = () => {
       console.error("Error fetching referred user:", error.message);
       toast(
         error?.response?.data?.message ||
-          "Failed to fetch referred user details"
+        "Failed to fetch referred user details"
       );
     }
   };
@@ -581,11 +630,12 @@ const AllUsers = () => {
                   <thead className="text-bold text-[15px] text-black bg-gray-100">
                     <tr>
                       <th>SrNo</th>
+                      <th>DateTime</th>
                       <th>Name</th>
-                      <th>Email</th>
+                      <th>BuisnessCategory</th>
+                      {/* <th>Email</th> */}
                       <th>Contact</th>
                       <th>Address</th>
-                      <th>BuisnessCategory</th>
                       <th>Referred By</th>
                       <th>UserStatus</th>
                       <th>Payment Status</th>
@@ -597,12 +647,13 @@ const AllUsers = () => {
                     {filteredUsers.reverse().map((user, index) => (
                       <tr key={user._id}>
                         <th>{index + 1}</th>
-                        <td>{user.name}</td>
-                        <td>{user.email}</td>
-                        <td>{user.phone}</td>
-                        <td>{`${user?.address?.area}, ${user?.address?.city}, ${user?.address?.state}, ${user?.address?.country}, ${user?.address?.pincode}`}</td>
-                        <td>{user.businessCategory[0]}</td>
-                        <td>
+                        <td className="text-sm">{new Date(user.createdAt).toLocaleString()}</td>
+                        <td className="text-sm">{user.name}</td>
+                        <td className="text-sm capitalize">{user.businessCategory[0]}</td>
+                        {/* <td className="text-sm">{user.email}</td> */}
+                        <td className="text-sm">{user.phone}</td>
+                        <td className="text-sm">{`${user?.address?.area}, ${user?.address?.city}, ${user?.address?.state}, ${user?.address?.country}, ${user?.address?.pincode}`}</td>
+                        <td className="text-sm">
                           <button
                             className="btn btn-light border border-gray-300 btn-sm"
                             onClick={() =>
@@ -614,7 +665,7 @@ const AllUsers = () => {
                               : "N/A"}
                           </button>
                         </td>
-                        <td>
+                        <td className="text-sm">
                           {" "}
                           {user?.userstatus === "available" ? (
                             <span className="btn btn-sm btn-success">
@@ -626,7 +677,7 @@ const AllUsers = () => {
                             </span>
                           )}
                         </td>
-                        <td>
+                        <td className="text-sm">
                           {user.paymentVerified ? (
                             <button className="btn btn-success btn-sm">
                               <span className="text-white flex items-center gap-2">
@@ -664,7 +715,7 @@ const AllUsers = () => {
                             Edit
                           </button>
                         </td>
-                        <td>
+                        <td className="text-sm">
                           <Link
                             to="/admin/users/addremark"
                             state={{ userId: user._id }}
@@ -684,6 +735,7 @@ const AllUsers = () => {
         {selectedUser && (
           <UserDetailsModal
             user={selectedUser}
+            setSelectedUser={setSelectedUser}
             onClose={() => setSelectedUser(null)}
           />
         )}

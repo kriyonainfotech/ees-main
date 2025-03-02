@@ -98,37 +98,41 @@ const ServiceDetail = () => {
 
   return (
     <>
-      <AdminNavbar />
-      <UserSideBar />
-      <ProfileSidebar />
-      <section className=" mt-28">
-        <div className="container">
-          <div className="row">
-            <div className="d-flex">
-              <h3 className="py-4 text-capitalize">{category}</h3>
-            </div>
-
-            <div className="col-12 d-flex flex-wrap px-0">
-              {isLoading ? (
-                <div className="d-flex justify-content-center align-items-center" style={{ height: "50vh", width: "100vw" }}>
-                  <Loader color="#00BFFF" height={50} width={50} />
+      <div className="min-h-screen d-flex flex-column">
+        <AdminNavbar />
+        <UserSideBar />
+        <ProfileSidebar />
+        <main className="flex-grow">
+          <section className=" mt-28">
+            <div className="container">
+              <div className="row">
+                <div className="d-flex">
+                  <h3 className="py-4 text-capitalize">{category}</h3>
                 </div>
-              ) : service.length > 0 ? (
-                service.map((Usersdata, i) => (
-                  <SearchResult
-                    key={Usersdata._id} // Use unique ID instead of index
-                    Usersdata={Usersdata}
-                    token={token}
-                  />
-                ))
-              ) : (
-                <h6 className="pt-3 px-3">{apiMessage}</h6>
-              )}
+
+                <div className="col-12 d-flex flex-wrap px-0">
+                  {isLoading ? (
+                    <div className="d-flex justify-content-center align-items-center" style={{ height: "50vh", width: "100vw" }}>
+                      <Loader color="#00BFFF" height={50} width={50} />
+                    </div>
+                  ) : service.length > 0 ? (
+                    service.map((Usersdata, i) => (
+                      <SearchResult
+                        key={Usersdata._id} // Use unique ID instead of index
+                        Usersdata={Usersdata}
+                        token={token}
+                      />
+                    ))
+                  ) : (
+                    <h6 className="pt-3 px-3">{apiMessage}</h6>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </section>
-      <Footer />
+          </section>
+        </main>
+        <Footer />
+      </div>
     </>
   );
 };

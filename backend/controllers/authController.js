@@ -807,7 +807,11 @@ const getalluser = async (req, res) => {
   try {
     const user = await UserModel.find({})
       .select("-received_requests -sended_requests")
-      .populate("referredBy", "name phone").populate("ekyc","bankProof panCardback panCardfront bankAccountNumber accountHolderName ifscCode status");
+      .populate("referredBy", "name phone")
+      .populate(
+        "ekyc",
+        "bankProof panCardback panCardfront bankAccountNumber accountHolderName ifscCode status"
+      );
 
     return res.status(200).json({
       success: true,
@@ -826,9 +830,9 @@ const getalluser = async (req, res) => {
 const getUser = async (req, res) => {
   try {
     const id = req.user.id;
-    const user = await UserModel.findById(id).select(
-      "-received_requests -sended_requests"
-    ).populate("ekyc");
+    const user = await UserModel.findById(id)
+      .select("-received_requests -sended_requests")
+      .populate("ekyc");
     if (!user) {
       return res.status(404).json({
         success: false,

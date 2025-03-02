@@ -14,23 +14,29 @@ const Logout = () => {
       const response = await axios.get(`${backend_API}/auth/logout`, {
         withCredentials: true, // Ensure cookies are sent with the request
       });
-  
+
       if (response.status === 200) {
         toast(response.data.message || "Logout Successful...");
-        
+
         document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=.vercel.app; Secure; SameSite=None; HttpOnly";
 
         // Clear client-side storage
         localStorage.removeItem('token');
+        localStorage.removeItem("kyc_modal_shown");
+        localStorage.removeItem("categories");
+        localStorage.removeItem("isAvailable");
+        localStorage.removeItem("rzp_checkout_anon_id");
+        localStorage.removeItem("rzp_device_id");
+
         window.location.reload()
         navigate('/login');
       }
     } catch (error) {
       console.error("Error during logout:", error);
-      toast.error(error?.response?.data?.message ||"Logout failed. Please try again.");
+      toast.error(error?.response?.data?.message || "Logout failed. Please try again.");
     }
   };
-  
+
 
   return (
     <li className="p-2 rounded hover:bg-primary hover:text-white focus:text-white">

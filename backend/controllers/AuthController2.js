@@ -223,56 +223,102 @@ const setReferral = async (req, res) => {
   }
 };
 
-const getUserAadhaarDetails = async (req, res) => {
+const resetekyc = async (req, res) => {
+  // try {
+  //   // List of user IDs
+  //   const userIds = [
+  //     "678b540577b05d9ae4d686d0",
+  //     "678b56056939b01acd70d9dd",
+  //     "678b5e4038264e14724d5da9",
+  //     "678b60cd50c6a3b37c9cda32",
+  //     "678b619350c6a3b37c9cda9e",
+  //     "678b6a868ab121215655d7de",
+  //     "678b6dc8287200ee689611f1",
+  //     "678d6ce8f1277af44ff3f136",
+  //     "678d8059ac1ce7729741da66",
+  //     "678ded4cdac94eaf3e0f98c8",
+  //     "678df13db7a93b00570c002a",
+  //     "678dfc5d70c781f9a6c681d2",
+  //     "678e2a86605b0af45dbad68a",
+  //     "678e45d06973260305c4126c",
+  //     "6790bb735eb719a777fe550c",
+  //     "6790bbd25eb719a777fe55d3",
+  //     "6791ddea5eb719a777fe948b",
+  //     "679883e23550a99555364e6e",
+  //     "6799b12ef577113f0f8e1d2d",
+  //     "6799cf2157029b6c015a400a",
+  //     "679a0700dde2c802e7f7f0cb",
+  //     "679a175f2a783b9adf84494b",
+  //     "679a213b2a783b9adf84784d",
+  //     "679a290d8141997906755198",
+  //     "679b61f39d362867d58ce360",
+  //   ];
+
+  //   // Find users based on the list of IDs
+  //   const users = await UserModel.find({ _id: { $in: userIds } }).select(
+  //     "name frontAadhar backAadhar"
+  //   );
+
+  //   if (!users || users.length === 0) {
+  //     return res
+  //       .status(404)
+  //       .json({ success: false, message: "No users found" });
+  //   }
+
+  //   // Send the response with the users' Aadhaar details
+  //   res.status(200).json({
+  //     success: true,
+  //     users,
+  //   });
+  // } catch (error) {
+  //   console.error("Error fetching user Aadhaar details:", error);
+  //   res.status(500).json({ success: false, message: "Server error" });
+  // }
+
   try {
-    // List of user IDs
-    const userIds = [
-      "678b540577b05d9ae4d686d0",
-      "678b56056939b01acd70d9dd",
-      "678b5e4038264e14724d5da9",
-      "678b60cd50c6a3b37c9cda32",
-      "678b619350c6a3b37c9cda9e",
-      "678b6a868ab121215655d7de",
-      "678b6dc8287200ee689611f1",
-      "678d6ce8f1277af44ff3f136",
-      "678d8059ac1ce7729741da66",
-      "678ded4cdac94eaf3e0f98c8",
-      "678df13db7a93b00570c002a",
-      "678dfc5d70c781f9a6c681d2",
-      "678e2a86605b0af45dbad68a",
-      "678e45d06973260305c4126c",
-      "6790bb735eb719a777fe550c",
-      "6790bbd25eb719a777fe55d3",
-      "6791ddea5eb719a777fe948b",
-      "679883e23550a99555364e6e",
-      "6799b12ef577113f0f8e1d2d",
-      "6799cf2157029b6c015a400a",
-      "679a0700dde2c802e7f7f0cb",
-      "679a175f2a783b9adf84494b",
-      "679a213b2a783b9adf84784d",
-      "679a290d8141997906755198",
-      "679b61f39d362867d58ce360",
-    ];
-
-    // Find users based on the list of IDs
-    const users = await UserModel.find({ _id: { $in: userIds } }).select(
-      "name frontAadhar backAadhar"
-    );
-
-    if (!users || users.length === 0) {
+    const { userId } = req.body;
+    console.log(req.body, "sav");
+    if (!userId) {
       return res
-        .status(404)
-        .json({ success: false, message: "No users found" });
+        .status(400)
+        .json({ success: false, message: "User ID is required." });
     }
 
-    // Send the response with the users' Aadhaar details
-    res.status(200).json({
-      success: true,
-      users,
-    });
+    // Find user and update frontAadhar, backAadhar, and ekyc
+    const updatedUser = await UserModel.findOneAndUpdate(
+      { _id: userId },
+      { $set: { frontAadhar: "", backAadhar: "", ekyc: null } },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found." });
+    }
+
+    // If ekyc exists, reset fields in KYC model
+    if (updatedUser.ekyc) {
+      await KYC.findOneAndUpdate(
+        { _id: updatedUser.ekyc },
+        {
+          $set: {
+            panCardfront: "",
+            panCardback: "",
+            bankProof: "",
+            status: "pending",
+            verified: false,
+          },
+        }
+      );
+    }
+
+    res
+      .status(200)
+      .send({ success: true, message: "eKYC reset successfully." });
   } catch (error) {
-    console.error("Error fetching user Aadhaar details:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.log("Error resetting eKYC:", error);
+    res.status(500).json({ success: false, message: "Internal server error." });
   }
 };
 
@@ -324,29 +370,36 @@ const getPaymentVerifiedUser = async (req, res) => {
   }
 };
 
-const getPendingeKYCs = async(req,res)=>{
- try {
-    const pendingUsers = await UserModel.find({})  
+const getPendingeKYCs = async (req, res) => {
+  try {
+    const pendingUsers = await UserModel.find({})
       .populate({
         path: "ekyc", // Populate KYC details
         match: { status: "pending" }, // Only where KYC status is pending
-        select: "status bankAccountNumber accountHolderName panCardfront panCardback bankProof", // Select relevant fields
+        select:
+          "status bankAccountNumber accountHolderName panCardfront panCardback bankProof", // Select relevant fields
       })
       .select("name phone ekyc frontAadhar backAadhar profilePic ");
 
     // Filter out users where ekyc is null (i.e., not pending)
-    const filteredUsers = pendingUsers.filter(user => user.ekyc);
+    const filteredUsers = pendingUsers.filter((user) => user.ekyc);
 
     if (filteredUsers.length === 0) {
-      return res.status(404).json({ success: false, message: "No pending eKYC users found." });
+      return res
+        .status(404)
+        .json({ success: false, message: "No pending eKYC users found." });
     }
 
-    res.status(200).send({ success: true, count:filteredUsers.length,users: filteredUsers });
+    res.status(200).send({
+      success: true,
+      count: filteredUsers.length,
+      users: filteredUsers,
+    });
   } catch (error) {
     console.logs("Error fetching pending eKYC users:", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
-}
+};
 
 const fixedPaymentHistory = async (req, res) => {
   // try {
@@ -426,8 +479,9 @@ module.exports = {
   getUsersByBCategory,
   setReferral,
   updateUserAddressAndAadhar,
-  getUserAadhaarDetails,
+  resetekyc,
   updateProfilePic,
   getPaymentVerifiedUser,
-  fixedPaymentHistory,getPendingeKYCs
+  fixedPaymentHistory,
+  getPendingeKYCs,
 };

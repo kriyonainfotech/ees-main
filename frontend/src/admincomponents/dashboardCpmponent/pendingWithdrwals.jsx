@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FaUserCheck } from "react-icons/fa";
+import { FaClock } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { RiSecurePaymentFill } from "react-icons/ri";
@@ -32,13 +32,13 @@ const PendingWithdrwals = () => {
 
   return (
     <div
-      className="shadow-lg rounded-xl p-4 bg-white hover:shadow-xl transition duration-300 cursor-pointer"
+      className="border rounded-xl p-4 bg-white hover:shadow-lg transition duration-300 cursor-pointer"
       onClick={() => navigate("/admin/withdrawals", { state: { withdrawals } })}
     >
       <div className="flex items-center space-x-4">
         {/* Icon */}
-        <div className="w-14 h-14 flex items-center justify-center bg-yellow-500 text-white rounded-full">
-          <FaUserCheck className="text-2xl" />
+        <div className="w-14 h-14 flex items-center justify-center bg-teal-500 text-white rounded-full">
+          <FaClock className="text-2xl" />
         </div>
 
         {/* Text Content */}
@@ -77,7 +77,7 @@ const PaidUsersCtn = () => {
 
   return (
     <div
-      className="shadow-lg rounded-xl p-4 bg-white hover:shadow-xl transition duration-300 cursor-pointer"
+      className="border rounded-xl p-4 bg-white hover:shadow-lg transition duration-300 cursor-pointer"
       onClick={() => navigate("/admin/payment-invoices")}
     >
       <div className="flex items-center space-x-4">
@@ -88,7 +88,7 @@ const PaidUsersCtn = () => {
 
         {/* Text Content */}
         <div>
-          <p className="text-gray-600 text-sm font-medium">Paid Users</p>
+          <p className="text-gray-600 text-sm font-medium">Payment History</p>
           <h5 className="text-xl font-semibold">{paidUsersCount}</h5>
         </div>
       </div>
@@ -119,7 +119,7 @@ const PendingKYCs = () => {
 
   return (
     <div
-      className="shadow-lg rounded-xl p-4 bg-white hover:shadow-xl transition duration-300 cursor-pointer"
+      className="border rounded-xl p-4 bg-white hover:shadow-lg transition duration-300 cursor-pointer"
       onClick={() => navigate("/admin/pending-kycs")}
     >
       <div className="flex items-center space-x-4">

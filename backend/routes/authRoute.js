@@ -18,7 +18,6 @@ const {
   updateProfileMobile,
   getUserMobile,
   setUserStatusMobile,
-  getUsersByCategory,
   forgotPassword,
   verifyCode,
   resetPassword,
@@ -33,11 +32,11 @@ const {
   getUsersByBCategory,
   updateUserAddressAndAadhar,
   setReferral,
-  getUserAadhaarDetails,
   updateProfilePic,
   getPaymentVerifiedUser,
   fixedPaymentHistory,
   getPendingeKYCs,
+  resetekyc,
 } = require("../controllers/AuthController2");
 const router = express.Router();
 
@@ -138,7 +137,7 @@ router.put("/setUserStatusMobile", setUserStatusMobile);
 router.put("/updateRoleByEmail", updateRoleByEmail);
 router.post("/getUsersByBCategory", getUsersByBCategory);
 
-router.get("/delete-aadhar", getUserAadhaarDetails);
+router.post("/reset-ekyc", resetekyc);
 
 // forgotpassword and reset password apis
 router.post("/forgot-password", forgotPassword);
