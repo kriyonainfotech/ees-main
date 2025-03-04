@@ -35,11 +35,13 @@ const PendingeKYCs = () => {
     }
   };
 
-  const confirmSubmit = async () => {
+  const confirmSubmit = async (kycId) => {
+    console.log(kycId, "kycId");
     try {
       const response = await axios.post(`${backend_API}/withdrawal/verifyKyc`, {
         kycId,
       });
+      console.log(response, "response+++++++++++++++++++++++++++++++");
       if (response.status === 200) {
         toast.success("KYC Verified Successfully!");
         // 🔄 Remove Verified User from State (Keep only Pending)
@@ -48,6 +50,7 @@ const PendingeKYCs = () => {
         );
       }
     } catch (error) {
+      console.log(error, "error+++++++++++++++++++++++++");
       toast.error(error.response?.data?.message || "Failed to verify KYC.");
     }
   };
@@ -58,7 +61,7 @@ const PendingeKYCs = () => {
         <p>Are you sure you want to verify this KYC?</p>
         <div style={{ display: "flex", justifyContent: "center", gap: "10px" }}>
           <button
-            onClick={confirmSubmit}
+            onClick={() => confirmSubmit(kycId)}
             className="bg-green-600 text-white px-3 py-1 rounded-md"
           >
             Yes
