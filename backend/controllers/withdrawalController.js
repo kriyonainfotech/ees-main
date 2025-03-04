@@ -108,7 +108,7 @@ const requestWithdrawal = async (req, res) => {
     });
     console.log("✅ Aadhar photos updated in UserModel");
 
-    res.status(201).json({
+    res.status(201).send({
       message: "Withdrawal request submitted successfully.",
       kyc: newKYC,
     });

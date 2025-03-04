@@ -6,6 +6,7 @@ const axios = require("axios");
 // const generateCSV = require("../config/generateCSV");
 const PDFDocument = require("pdfkit");
 
+
 const razorpayInstance = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
@@ -318,7 +319,7 @@ const verifyPayment = async (req, res) => {
 //     // Table Headers
 //     const tableHeaders = [
 //       "Transaction ID",
-//       "Amount (₹)",
+//       "Amount",
 //       "GST",
 //       "CGST",
 //       "SGST",
@@ -341,7 +342,7 @@ const verifyPayment = async (req, res) => {
 //     doc.moveDown(0.5).moveTo(50, doc.y).lineTo(550, doc.y).stroke();
 
 //     // Adding Transaction Data
-//     payments.items.forEach((txn) => {
+//    capturedPayments.items.forEach((txn) => {
 //       const { totalGST, cgst, sgst } = calculateGST(txn.amount / 100);
 //       let rowX = 50;
 //       let rowY = doc.y + 5;
@@ -382,138 +383,128 @@ const verifyPayment = async (req, res) => {
 //   }
 // };
 
-const generateUserReport = async (req, res) => {
+const generateGstInvoice = async (req, res) => {
   try {
-    console.log("🚀 [START] Generating PDF Report...");
+    console.log("🚀 Fetching Payment Details from Razorpay...");
 
-    const { userId } = req.body;
-    if (!userId) {
-      console.log("❌ [ERROR] User ID is missing.");
-      return res.status(400).json({ message: "User ID is required" });
+    const { year, month, startDate, endDate } = req.body;
+    if (!year) return res.status(400).json({ message: "Year is required" });
+
+    let query = { created_at: { $gte: new Date(`${year}-01-01`), $lte: new Date(`${year}-12-31`) } };
+    if (month) {
+      const monthIndex = new Date(`${month} 1, ${year}`).getMonth();
+      query.created_at.$gte = new Date(`${year}-${monthIndex + 1}-01`);
+      query.created_at.$lte = new Date(`${year}-${monthIndex + 1}-31`);
+    }
+    if (startDate && endDate) {
+      query.created_at.$gte = new Date(startDate);
+      query.created_at.$lte = new Date(endDate);
     }
 
-    console.log("🛠️ Fetching payment history from Razorpay...");
-    const payments = await razorpayInstance.payments.all({
-      customer_id: userId,
-    });
+    // Fetch payment data from Razorpay
+    const payments = await razorpayInstance.payments.all({ count: 25 }); // Fetch 25 records
+
+    const capturedPayments = payments.items.filter(payment => payment.status === "captured");
+    console.log(capturedPayments);
+
+
     if (!payments.items.length) {
-      console.log("⚠️ No transactions found for this user.");
       return res.status(404).json({ message: "No payments found" });
     }
 
-    console.log("📄 Creating PDF document...");
-    const doc = new PDFDocument({ margin: 50, size: "A4" });
-    const fileName = `GST_Report_${userId}.pdf`;
-    res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
+    console.log("📄 Creating GST Invoice PDF..." );
+    const doc = new PDFDocument({ margin: 10, size: "A4" });
+    const fileName = `GST_Invoices_${year}_${month || "All"}.pdf`;
+
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
     res.setHeader("Content-Type", "application/pdf");
     doc.pipe(res);
 
-    // Header Section
-    doc
-      .fontSize(18)
-      .text("GST INVOICE REPORT", { align: "center" })
-      .moveDown(1);
-    doc
-      .fontSize(12)
-      .text(`User ID: ${userId}`, { align: "center" })
-      .moveDown(1);
+doc.fontSize(20).text("GST Invoices", { align: "center" }).moveDown();
 
-    // Table Configuration
-    const tableHeaders = [
-      "SrNo",
-      "Date",
-      "Client Name",
-      "City",
-      "State",
-      "Taxable Amount",
-      "CGST (9%)",
-      "SGST (9%)",
-      "IGST (10%)",
-      "Total Amount",
-    ];
-    const columnWidths = [30, 60, 90, 50, 50, 80, 60, 60, 60, 90];
-    const startX = 50;
-    let startY = 200;
+// **Table Headers**
+const headers = [
+  "Sr No", "Date", "Client Name", "City", "State", "Taxable Amt",
+  "CGST", "SGST", "IGST", "Total Amt"
+];
+const columnWidths = [40, 70, 50, 50, 50, 50, 40, 40, 40, 60];
 
-    // Draw Table Headers with Increased Height
-    doc
-      .fontSize(10)
-      .fillColor("black")
-      .rect(
-        startX,
-        startY - 5,
-        columnWidths.reduce((a, b) => a + b, 0),
-        30
-      )
-      .fill("lightgray");
-    doc.fillColor("black").fontSize(11);
-    tableHeaders.forEach((header, i) => {
-      doc.text(
-        header,
-        startX + columnWidths.slice(0, i).reduce((a, b) => a + b, 0),
-        startY,
-        { width: columnWidths[i], align: "center" }
-      );
-    });
-    startY += 35;
+let startX = 50;
+let startY = 150;
 
-    // Table Rows
-    let totalAmount = 0;
-    payments.items.forEach((txn, index) => {
-      const client = txn.customer || {};
-      const address = client.address || {};
-      const taxableAmount = txn.amount / 100;
-      totalAmount += taxableAmount;
+// **Draw Table Header**
+doc.fillColor("gray").rect(startX, startY - 0, 500, 40).fill();
+doc.fillColor("white").fontSize(10);
+headers.forEach((header, i) => {
+  doc.text(header, startX + columnWidths.slice(0, i).reduce((a, b) => a + b, 0), startY + 12, { 
+    width: columnWidths[i], align: "center" 
+  });
+});
+startY += 50;
 
-      // GST Calculation
-      const isSameState = address.state === "Business State";
-      const cgst = isSameState ? taxableAmount * 0.09 : 0;
-      const sgst = isSameState ? taxableAmount * 0.09 : 0;
-      const igst = !isSameState ? taxableAmount * 0.1 : 0;
-      const finalAmount = taxableAmount + cgst + sgst + igst;
+// **Processing Each Payment**
+for (const [index, txn] of capturedPayments.entries()) {
 
-      const rowData = [
-        index + 1,
-        new Date(txn.created_at * 1000).toLocaleDateString(),
-        client.name || "N/A",
-        address.city || "N/A",
-        address.state || "N/A",
-        `₹${taxableAmount.toFixed(2)}`,
-        `₹${cgst.toFixed(2)}`,
-        `₹${sgst.toFixed(2)}`,
-        `₹${igst.toFixed(2)}`,
-        `₹${finalAmount.toFixed(2)}`,
-      ];
+  const paymentDate = new Date(txn.created_at * 1000).toLocaleDateString();
+  let phone = txn.contact.replace("+91", "").trim(); // Remove +91 if present
 
-      let rowX = startX;
-      rowData.forEach((data, i) => {
-        doc.text(data.toString(), rowX, startY, {
-          width: columnWidths[i],
-          align: "center",
-        });
-        rowX += columnWidths[i];
-      });
-      startY += 25;
-    });
+  // **Find User from UserModel**
+  const user = await UserModel.findOne({ phone });
+  const clientName = user ? user.name : "N/A"; // Use found name or N/A
+  const city = user ? user.address.city : "N/A";
+  const state = user ? user.address.state : "N/A";
+   const amount = Number(txn.amount) / 100; // Convert to number safely
+  const gst = 18;
+ // Extract base price from total amount
+  const basePrice = amount / (1 + gst / 100);
 
-    // Total Amount at End
-    doc.moveDown(2);
-    doc
-      .fontSize(12)
-      .text(`Total Amount: ₹${totalAmount.toFixed(2)}`, { align: "right" })
-      .moveDown(2);
+  // Calculate GST amount
+  const totalGst = amount - basePrice;
 
-    console.log("✅ [SUCCESS] PDF report generated and sent to client.");
+  // CGST and SGST split equally
+  const cgst = parseFloat((totalGst / 2).toFixed(2));
+  const sgst = parseFloat((totalGst / 2).toFixed(2));
+
+  const igst = 0;
+
+  const formatCurrency = (value) => `₹${parseFloat(value).toFixed(2)}`;
+
+  const taxableAmount = (amount * 100) / (100 + gst);
+  const formattedTaxableAmount = formatCurrency(taxableAmount);
+  const formattedAmount = formatCurrency(amount);
+  const rowData = [
+    index + 1, paymentDate, clientName, city, state , formattedTaxableAmount, `${cgst}`, `${sgst}`, `${igst}`, formattedAmount
+  ];
+
+  let rowX = startX;
+    
+  // **Apply Row Background First**
+  doc.fillColor(index % 2 !== 0 ? "#f0f0f0" : "white")
+     .rect(startX, startY - 6, 500, 25)
+     .fill();
+
+  doc.fillColor("black"); // Reset text color
+
+  rowData.forEach((data, i) => {
+    doc.text(data.toString(), rowX, startY, { width: columnWidths[i], align: "center" });
+    rowX += columnWidths[i];
+  });
+
+  startY += 25;
+}
+
+    console.log("✅ GST Invoice PDF Generated Successfully");
     doc.end();
   } catch (error) {
-    console.error("❌ [ERROR] Failed to generate report:", error);
-    res.status(500).json({ message: "Failed to generate report" });
+    console.error("❌ Error Generating Invoices:", error);
+    res.status(500).json({ message: "Failed to generate invoices" });
   }
 };
+
 
 module.exports = {
   CreateOrder,
   verifyPayment,
   distributeReferralRewards,
-  generateUserReport,
+  generateGstInvoice,
 };

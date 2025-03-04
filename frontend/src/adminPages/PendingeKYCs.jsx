@@ -35,15 +35,13 @@ const PendingeKYCs = () => {
     }
   };
 
-  const handleVerifyKyc = async (kycId) => {
+  const confirmSubmit = async () => {
     try {
       const response = await axios.post(`${backend_API}/withdrawal/verifyKyc`, {
         kycId,
       });
-
       if (response.status === 200) {
         toast.success("KYC Verified Successfully!");
-
         // 🔄 Remove Verified User from State (Keep only Pending)
         setUsers((prevUsers) =>
           prevUsers.filter((user) => user.ekyc._id !== kycId)
@@ -52,6 +50,29 @@ const PendingeKYCs = () => {
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to verify KYC.");
     }
+  };
+
+  const handleVerifyKyc = async (kycId) => {
+    toast.info(
+      <div>
+        <p>Are you sure you want to verify this KYC?</p>
+        <div style={{ display: "flex", justifyContent: "center", gap: "10px" }}>
+          <button
+            onClick={confirmSubmit}
+            className="bg-green-600 text-white px-3 py-1 rounded-md"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => toast.dismiss()}
+            className="bg-red-500 text-white px-3 py-1 rounded-md"
+          >
+            No
+          </button>
+        </div>
+      </div>,
+      { autoClose: false }
+    );
   };
 
   return (
@@ -108,7 +129,7 @@ const PendingeKYCs = () => {
                         <img
                           src={user.profilePic}
                           alt="Profile"
-                          className="w-10 h-10 rounded-full border z-50 "
+                          className="w-10 h-10 rounded-full border z-50 cursor-pointer "
                           onClick={() => setSelectedImage(user.profilePic)}
                         />
                         <span>{user.name || "N/A"}</span>

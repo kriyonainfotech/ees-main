@@ -32,15 +32,15 @@ const KYCModal = ({ onClose, onSubmit }) => {
   });
   const [files, setFiles] = useState({
     bankProof: null,
-    panFront: null,
-    panBack: null,
+    panCardfront: null,
+    panCardback: null,
     frontAadhar: null,
     backAadhar: null,
   });
   const [previews, setPreviews] = useState({
     bankProof: null,
-    panFront: null,
-    panBack: null,
+    panCardfront: null,
+    panCardback: null,
     frontAadhar: null,
     backAadhar: null,
   });
@@ -52,6 +52,7 @@ const KYCModal = ({ onClose, onSubmit }) => {
         toast.error("File size should not exceed 2MB.");
         return;
       }
+
       setFiles((prev) => ({ ...prev, [type]: file }));
       setPreviews((prev) => ({ ...prev, [type]: URL.createObjectURL(file) }));
     }
@@ -68,8 +69,8 @@ const KYCModal = ({ onClose, onSubmit }) => {
   const handleSubmit = async () => {
     if (
       !files.bankProof ||
-      !files.panFront ||
-      !files.panBack ||
+      !files.panCardfront ||
+      !files.panCardback ||
       !files.frontAadhar ||
       !files.backAadhar
     ) {
@@ -78,8 +79,8 @@ const KYCModal = ({ onClose, onSubmit }) => {
     }
     const formData = new FormData();
     formData.append("bankProof", files.bankProof);
-    formData.append("panCardfront", files.panFront);
-    formData.append("panCardback", files.panBack);
+    formData.append("panCardfront", files.panCardfront);
+    formData.append("panCardback", files.panCardback);
     formData.append("frontAadhar", files.frontAadhar);
     formData.append("backAadhar", files.backAadhar);
     formData.append("bankAccountNumber", bankDetails.bankAccountNumber);
@@ -94,10 +95,12 @@ const KYCModal = ({ onClose, onSubmit }) => {
           withCredentials: true,
         }
       );
+      console.log(response.data, "response.data");
       if (response.status === 201) {
         toast.success("KYC details submitted successfully!");
         onSubmit();
         onClose();
+        window.location.reload();
       } else {
         toast.error("Submission failed. Try again.");
       }
@@ -105,6 +108,44 @@ const KYCModal = ({ onClose, onSubmit }) => {
       console.error("Error:", error);
       toast.error("Something went wrong!");
     }
+  };
+
+  const confirmSubmit = () => {
+    toast.dismiss(); // Close the confirmation toast
+    handleSubmit(); // Proceed with submission
+  };
+
+  const handleConfirmSubmit = () => {
+    toast.info(
+      <div>
+        <p>Are you sure you want to submit?</p>
+        <div style={{ display: "flex", justifyContent: "center", gap: "10px" }}>
+          <button
+            onClick={confirmSubmit}
+            style={{
+              color: "green",
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+            }}
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => toast.dismiss()}
+            style={{
+              color: "red",
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+            }}
+          >
+            No
+          </button>
+        </div>
+      </div>,
+      { autoClose: false }
+    );
   };
 
   return (
@@ -219,7 +260,7 @@ const KYCModal = ({ onClose, onSubmit }) => {
           ) : (
             <button
               className="p-2 bg-green-600 text-white rounded"
-              onClick={handleSubmit}
+              onClick={handleConfirmSubmit}
             >
               Submit
             </button>
@@ -232,7 +273,15 @@ const KYCModal = ({ onClose, onSubmit }) => {
 
 const Profile = () => {
   const { user } = useContext(UserContext);
-  // console.log(user, "user---------------------------------");
+  console.log(user, "user---------------------------------");
+
+  // const [User, setUser] = useState(null);
+
+  // useEffect(() => {
+  //   setUser(user);
+  //   console.log(User, "User-----------------------------------");
+  // }, [user]);
+
   const [linkCopied, setLinkCopied] = useState(false);
   const location = useLocation();
   const [isKYCModalOpen, setIsKYCModalOpen] = useState(false);
@@ -543,7 +592,6 @@ const Profile = () => {
                       onClose={() => setIsKYCModalOpen(false)}
                       onSubmit={() => {
                         setIsKYCModalOpen(false);
-                        alert("KYC Submitted Successfully!");
                       }}
                     />
                   )}
