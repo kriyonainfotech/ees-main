@@ -8,16 +8,16 @@ const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 // ✅ 1. Validate File Uploads
 const validateFiles = (files) => {
   if (
-    // !files?.frontAadhar?.[0] ||
-    // !files?.backAadhar?.[0] ||
+    !files?.frontAadhar?.[0] ||
+    !files?.backAadhar?.[0] ||
     !files?.profilePic?.[0]
   ) {
     throw new Error("Please upload all required files");
   }
 
   if (
-    // files.frontAadhar[0].size > MAX_FILE_SIZE ||
-    // files.backAadhar[0].size > MAX_FILE_SIZE ||
+    files.frontAadhar[0].size > MAX_FILE_SIZE ||
+    files.backAadhar[0].size > MAX_FILE_SIZE ||
     files.profilePic[0].size > MAX_FILE_SIZE
   ) {
     throw new Error("Each file must be less than 2MB");

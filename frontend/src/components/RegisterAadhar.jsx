@@ -14,15 +14,15 @@ const backend_API = import.meta.env.VITE_API_URL;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // **2MB file size limit**
 // const MAX_FILE_SIZE = 50 * 1024; // 50KB
 const RegisterAadhar = () => {
-  //   const { user } = useContext(UserContext);
+  const { user } = useContext(UserContext);
   const { fcmToken } = useContext(FCMContext);
 
-  //   const [frontAadhar, setFrontAadhar] = useState(null);
-  //   const [backAadhar, setBackAadhar] = useState(null);
+  const [frontAadhar, setFrontAadhar] = useState(null);
+  const [backAadhar, setBackAadhar] = useState(null);
   const [profilePic, setProfilePic] = useState(null);
 
-  //   const [frontAadharPreview, setFrontAadharPreview] = useState(null);
-  //   const [backAadharPreview, setBackAadharPreview] = useState(null);
+  const [frontAadharPreview, setFrontAadharPreview] = useState(null);
+  const [backAadharPreview, setBackAadharPreview] = useState(null);
   const [profilePicPreview, setProfilePicPreview] = useState(null);
 
   const [isWebcamOpen, setIsWebcamOpen] = useState(false);
@@ -70,16 +70,16 @@ const RegisterAadhar = () => {
             return;
           }
           console.log(file.size);
-          //   if (webcamMode === "frontAadhar") {
-          //     setFrontAadhar(file);
-          //     setFrontAadharPreview(imageSrc);
-          //   } else if (webcamMode === "backAadhar") {
-          //     setBackAadhar(file);
-          //     setBackAadharPreview(imageSrc);
-          //   } else if (webcamMode === "profile") {
-          //     setProfilePic(file);
-          //     setProfilePicPreview(imageSrc);
-          //   }
+          if (webcamMode === "frontAadhar") {
+            setFrontAadhar(file);
+            setFrontAadharPreview(imageSrc);
+          } else if (webcamMode === "backAadhar") {
+            setBackAadhar(file);
+            setBackAadharPreview(imageSrc);
+          } else if (webcamMode === "profile") {
+            setProfilePic(file);
+            setProfilePicPreview(imageSrc);
+          }
           if (webcamMode === "profile") {
             setProfilePic(file);
             setProfilePicPreview(imageSrc);
@@ -100,11 +100,11 @@ const RegisterAadhar = () => {
         setLoading(false);
         return;
       }
-      //   if (!frontAadhar || !backAadhar || !profilePic) {
-      //     toast.error("Please upload all required documents");
-      //     setLoading(false);
-      //     return;
-      //   }
+      if (!frontAadhar || !backAadhar || !profilePic) {
+        toast.error("Please upload all required documents");
+        setLoading(false);
+        return;
+      }
 
       const formData = {
         name: previousData.name,
@@ -127,8 +127,8 @@ const RegisterAadhar = () => {
         formDataToSend.append(key, formData[key]);
       });
 
-      //   formDataToSend.append("frontAadhar", frontAadhar);
-      //   formDataToSend.append("backAadhar", backAadhar);
+      formDataToSend.append("frontAadhar", frontAadhar);
+      formDataToSend.append("backAadhar", backAadhar);
       formDataToSend.append("profilePic", profilePic);
 
       const response = await axios.post(
@@ -218,7 +218,7 @@ const RegisterAadhar = () => {
                   </div>
                   <form onSubmit={handleSubmit}>
                     <div className="mx-auto max-w-full">
-                      {/* <h4 className="py-4 text-center">Aadhaar KYC</h4>
+                      <h4 className="py-4 text-center">Aadhaar KYC</h4>
                       <div className="d-flex " style={{ position: "relative" }}>
                         <div className="col-6 p-1">
                           <div className="">
@@ -350,7 +350,7 @@ const RegisterAadhar = () => {
                             </div>
                           </div>
                         </div>
-                      </div> */}
+                      </div>
 
                       <div className="col-12 d-flex justify-content-center">
                         <div className=" py-3" style={{ position: "relative" }}>

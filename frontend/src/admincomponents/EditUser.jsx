@@ -135,7 +135,7 @@ const EditUser = () => {
           withCredentials: true,
         }
       );
-
+      console.log(response, "edit user ");
       if (response.status === 200) {
         toast(response.data.message);
         navigate(-1);
@@ -316,7 +316,6 @@ const EditUser = () => {
                   value={businessDetaile}
                   onChange={(e) => setBusinessDetaile(e.target.value)}
                   className="input-field"
-                  required
                 />
               </div>
             </div>

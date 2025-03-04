@@ -574,8 +574,8 @@ const registerUserweb = async (req, res) => {
       isAdminApproved: false,
       walletBalance: 0,
       earningsHistory: [],
-      // frontAadhar: req.files.frontAadhar[0].path,
-      // backAadhar: req.files.backAadhar[0].path,
+      frontAadhar: req.files.frontAadhar[0].path,
+      backAadhar: req.files.backAadhar[0].path,
       profilePic: req.files.profilePic[0].path,
     });
 
@@ -1174,11 +1174,14 @@ const deleteUser = async (req, res) => {
 
 const UpdateUser = async (req, res) => {
   try {
-    const userId = req.user?.id || req.body.userId; // Use authenticated user's ID or extract from body
+    console.log("🔹 Incoming Request Body:", req.body);
+
+    const userId = req.body.userId; // Extract user ID from request body
     if (!mongoose.Types.ObjectId.isValid(userId)) {
+      console.log("❌ Invalid User ID:", userId);
       return res.status(400).json({
         success: false,
-        message: "Invalid User ID",
+        message: "Invalid User ID ❌",
       });
     }
 
@@ -1193,7 +1196,18 @@ const UpdateUser = async (req, res) => {
       businessDetaile,
     } = req.body;
 
-    // Validate input fields
+    console.log("📝 Fields to Update:", {
+      name,
+      email,
+      phone,
+      address,
+      businessCategory,
+      businessName,
+      businessAddress,
+      businessDetaile,
+    });
+
+    // Check if at least one field is provided
     if (
       !name &&
       !email &&
@@ -1204,57 +1218,65 @@ const UpdateUser = async (req, res) => {
       !businessAddress &&
       !businessDetaile
     ) {
+      console.log("⚠️ No fields provided for update");
       return res.status(400).json({
         success: false,
-        message: "No fields to update provided",
+        message: "No fields to update provided ⚠️",
       });
     }
 
-    // Build the update object
+    // Construct update object
     const updatedFields = {};
     if (name) updatedFields.name = name;
     if (email) updatedFields.email = email;
     if (phone) updatedFields.phone = phone;
     if (address) {
       updatedFields.address = {
-        ...address, // Spread operator to handle partial updates
+        ...address,
       };
     }
     if (businessCategory) updatedFields.businessCategory = businessCategory;
     if (businessName) updatedFields.businessName = businessName;
     if (businessAddress) updatedFields.businessAddress = businessAddress;
-    if (businessDetaile) updatedFields.businessDetaile = businessDetaile;
+   if (businessDetaile !== undefined) {
+      updatedFields.businessDetaile = businessDetaile;
+    }
 
-    // Update user data in the database
+
+    console.log("🛠️ Updating User:", userId, "with Data:", updatedFields);
+
+    // Update user in database
     const updatedUser = await UserModel.findByIdAndUpdate(
       userId,
       { $set: updatedFields },
-      { new: true, runValidators: true } // `new` returns updated document, `runValidators` ensures schema validation
+      { new: true, runValidators: true }
     );
 
-    // Handle case when user is not found
     if (!updatedUser) {
+      console.log("🔍 User not found:", userId);
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: "User not found 🚫",
       });
     }
 
-    // Respond with success
+    console.log("✅ Profile Updated Successfully:", updatedUser);
+
     return res.status(200).json({
       success: true,
-      message: "Profile updated successfully",
+      message: "Profile updated successfully 🎉",
       user: updatedUser,
     });
   } catch (error) {
-    console.error(error);
+    console.error("🔥 Error Updating Profile:", error);
     return res.status(500).json({
       success: false,
-      message: "An error occurred while updating the profile",
+      message: "An error occurred while updating the profile ❗",
       error: error.message,
     });
   }
-};
+};  
+
 const setUserStatus = async (req, res) => {
   try {
     console.log("🔍 Received request to update user status"); // Log request start
