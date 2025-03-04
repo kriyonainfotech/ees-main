@@ -31,7 +31,7 @@ const Login = lazy(() => import("./components/Login"));
 const Registration = lazy(() => import("./components/Registration"));
 const Profile = lazy(() => import("./Pages/Profile"));
 const EditProfile = lazy(() => import("./components/EditProfile"));
-const Admin = lazy(() => import("./Pages/Admin"));  
+const Admin = lazy(() => import("./Pages/Admin"));
 const EditUser = lazy(() => import("./admincomponents/EditUser"));
 const ServiceDetail = lazy(() => import("./Pages/ServiceDetail"));
 const Services = lazy(() => import("./Pages/Services"));
