@@ -1,15 +1,18 @@
 import axios from "axios";
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { FaPhone, FaStar } from "react-icons/fa6";
 import { toast } from "react-toastify";
 import { format } from "date-fns";
 import starGold from "../../public/starRating.png";
 import starSilver from "../../public/startSilver.png";
 import ProfileIcon from "../../public/User_icon.webp";
+import { UserContext } from "../UserContext";
 
 const backend_API = import.meta.env.VITE_API_URL;
 
-const ReceivedRequest = ({ receivedRequest, setReceivedRequest }) => {
+const ReceivedRequest = ({ receivedRequest, setReceivedRequest, user }) => {
+  console.log(user, "useewr");
+  ``;
   console.log(receivedRequest, "receivedRequest");
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [status, setStatus] = useState(null);
@@ -117,10 +120,66 @@ const ReceivedRequest = ({ receivedRequest, setReceivedRequest }) => {
     ));
   };
 
+  const cancelRequest = (requestId) => {
+    const userId = user?._id;
+
+    if (!userId) {
+      toast.error("User not found!");
+      return;
+    }
+
+    toast.info(
+      <div>
+        <p>Are you sure you want to cancel this request?</p>
+        <div className="flex justify-end gap-3 mt-2">
+          <button
+            className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700"
+            onClick={async () => {
+              toast.dismiss(); // Close toast before making API call
+              try {
+                const { data } = await axios.delete(
+                  `${backend_API}/request/deleteRequest`,
+                  {
+                    data: { requestId, userId },
+                  }
+                );
+
+                if (data.success) {
+                  toast.success("Request deleted successfully!");
+                  setTimeout(() => {
+                    window.location.reload(); // Reload the page after 5 seconds
+                  }, 4000); // 5000ms = 5 seconds
+                  // Optionally update UI (e.g., remove request from state)
+                } else {
+                  toast.error(data.message || "Failed to delete request.");
+                }
+              } catch (error) {
+                console.error("Error deleting request:", error);
+                toast.error(
+                  error.response?.data?.message ||
+                    "An error occurred while deleting the request."
+                );
+              }
+            }}
+          >
+            Yes
+          </button>
+          <button
+            className="px-3 py-1 bg-gray-400 text-white rounded-md hover:bg-gray-500"
+            onClick={() => toast.dismiss()} // Close toast if No is clicked
+          >
+            No
+          </button>
+        </div>
+      </div>,
+      { autoClose: false, closeOnClick: false }
+    );
+  };
+
   return (
     <div className="mt-0">
       <section>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mt-4">
+        <div className="grid  grid-cols-2 xl:grid-cols-4 gap-4 mt-4">
           {receivedRequest?.length ? (
             receivedRequest.map((request, i) => (
               <div
@@ -136,16 +195,11 @@ const ReceivedRequest = ({ receivedRequest, setReceivedRequest }) => {
                     ? "Request accepted, contact the user."
                     : ""
                 }
-                className={`bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden ${
-                  request.status === "cancelled" ||
-                  request.status === "rejected"
-                    ? "opacity-50 grayscale"
-                    : ""
-                }`}
+                className={`bg-white rounded-xl border  overflow-hidden`}
               >
                 <div className="relative">
                   <img
-                    className="w-full h-[400px] object-cover object-top"
+                    className="w-full h-[250px] md:h-[400px] object-cover object-top"
                     src={request.profilePic || ProfileIcon}
                     alt="Profile"
                   />
@@ -162,7 +216,7 @@ const ReceivedRequest = ({ receivedRequest, setReceivedRequest }) => {
                   </span>
                 </div>
 
-                <div className="p-3">
+                {/* <div className="p-3 ">
                   <h4 className="text-lg font-semibold text-gray-900">
                     {request.name || "Unknown User"}
                   </h4>
@@ -189,7 +243,6 @@ const ReceivedRequest = ({ receivedRequest, setReceivedRequest }) => {
                     </span>
                   </div>
 
-                  {/* Buttons based on request status */}
                   <div className="mt-4 flex gap-2">
                     {request.status === "pending" && (
                       <>
@@ -247,6 +300,102 @@ const ReceivedRequest = ({ receivedRequest, setReceivedRequest }) => {
                         onClick={() => openModal(request)}
                       >
                         Rate User
+                      </button>
+                    )}
+                  </div>
+                </div> */}
+
+                <div className="p-3 sm:w-full">
+                  <h4 className="text-lg font-semibold text-gray-900 sm:w-full block">
+                    {request.name || "Unknown User"}
+                  </h4>
+
+                  <div className="flex  flex-col sm:flex-row justify-between items-center">
+                    <p className="text-orange-600 text-sm font-medium capitalize w-full block mt-2">
+                      {request.businessCategory?.join(", ") || "N/A"}
+                    </p>
+                    <p className="text-xs text-gray-500 w-full block mt-1">
+                      {format(new Date(request.date), "PPpp")}
+                    </p>
+                  </div>
+
+                  <div className="flex justify-between items-center  mt-2">
+                    <span className="text-gray-800 text-sm  ">
+                      User Rating:
+                    </span>
+                    <div className="flex gap-1 overflow-auto  mt-1">
+                      {renderStars(request?.userrating?.value || 0, 10)}
+                    </div>
+                    <span className="text-gray-700 block mt-1">
+                      {request?.userrating?.value || 0}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 flex flex-col md:flex-row gap-2">
+                    {request.status === "pending" && (
+                      <>
+                        <button
+                          className="p-2 text-sm w-full md:flex-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                          onClick={() =>
+                            handleAction(
+                              request.senderId,
+                              request.requestId,
+                              "accepted"
+                            )
+                          }
+                        >
+                          Accept
+                        </button>
+                        <button
+                          className="p-2 text-sm w-full md:flex-1 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                          onClick={() =>
+                            handleAction(
+                              request.senderId,
+                              request.requestId,
+                              "rejected"
+                            )
+                          }
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
+                    {request.status === "accepted" && (
+                      <>
+                        <a
+                          href={`tel:${request.phone}`}
+                          className="w-full md:flex-1 flex items-center justify-center gap-2 p-2 text-sm text-white bg-green-600 rounded-lg hover:bg-green-700 transition"
+                        >
+                          <FaPhone /> Contact Now
+                        </a>
+                        <button
+                          className="p-2 text-sm w-full md:flex-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                          onClick={() =>
+                            handleAction(
+                              request.senderId,
+                              request.requestId,
+                              "completed"
+                            )
+                          }
+                        >
+                          Completed
+                        </button>
+                      </>
+                    )}
+                    {request.status === "completed" && (
+                      <button
+                        className="p-2 text-sm w-full bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition"
+                        onClick={() => openModal(request)}
+                      >
+                        Rate User
+                      </button>
+                    )}
+                    {request.status === "rated" && (
+                      <button
+                        className="w-full sm:w-auto p-2 bg-gray-600 text-white rounded-lg hover:bg-red-900 transition"
+                        onClick={() => cancelRequest(request.requestId)}
+                      >
+                        Remove
                       </button>
                     )}
                   </div>

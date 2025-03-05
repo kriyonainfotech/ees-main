@@ -4,6 +4,8 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import "react-country-state-city/dist/react-country-state-city.css";
 import { UserContext } from "../UserContext";
 import { FaEye, FaEyeSlash } from "react-icons/fa"; // Font Awesome icons for show/hide
+import { toast } from "react-toastify";
+import { BiCurrentLocation } from "react-icons/bi";
 
 function Registration() {
   const { user } = useContext(UserContext);
@@ -127,19 +129,91 @@ function Registration() {
   };
 
   // Handle pincode input change
-  const handlePincodeChange = (e) => {
-    const inputPincode = e.target.value.trim();
-    setPincode(inputPincode);
+  // const handlePincodeChange = (e) => {
+  //   const inputPincode = e.target.value.trim();
+  //   setPincode(inputPincode);
 
-    if (inputPincode.length === 6) {
-      fetchLocationDetails(inputPincode);
-    } else {
-      setArea("");
-      setCity("");
-      setState("");
-      setCountry("");
-      setError("");
+  //   if (inputPincode.length === 6) {
+  //     fetchLocationDetails(inputPincode);
+  //   } else {
+  //     setArea("");
+  //     setCity("");
+  //     setState("");
+  //     setCountry("");
+  //     setError("");
+  //   }
+  // };
+  const handlePincodeChange = async (e) => {
+    const newPincode = e.target.value;
+    setPincode(newPincode);
+
+    if (newPincode.length === 6) {
+      setLoading(true);
+      try {
+        const response = await fetch(
+          `https://api.postalpincode.in/pincode/${newPincode}`
+        );
+        const data = await response.json();
+        if (data[0].Status === "Success") {
+          setAddress({
+            city: data[0].PostOffice[0].District,
+            state: data[0].PostOffice[0].State,
+          });
+        } else {
+          setAddress({ city: "", state: "" });
+          alert("Invalid Pincode");
+        }
+      } catch (error) {
+        console.error("Error fetching address:", error);
+      } finally {
+        setLoading(false);
+      }
     }
+  };
+
+  const fetchCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by this browser.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        console.log("Latitude:", latitude, "Longitude:", longitude);
+
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&zoom=18&addressdetails=1`
+          );
+          const data = await response.json();
+
+          if (data.address) {
+            const { town, state_district, state, country, postcode } =
+              data.address;
+            console.log("Fetched Address:", data.address);
+
+            setArea(town || "");
+            setPincode(postcode || "");
+            setCity(state_district || "");
+            setState(state || "");
+            setCountry(country || "");
+
+            toast.success("Location fetched successfully!");
+          } else {
+            toast.error("Failed to fetch location. Try again.");
+          }
+        } catch (error) {
+          console.error("Error fetching location:", error);
+          toast.error("Failed to fetch location details.");
+        }
+      },
+      (error) => {
+        console.error("Geolocation Error:", error);
+        toast.error("Please allow location access.");
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   };
 
   const handleSubmits = async (e) => {
@@ -301,7 +375,7 @@ function Registration() {
                 </div>
 
                 {/* Address Fields */}
-                <div className="grid grid-cols-2 gap-4 mt-4">
+                {/* <div className="grid grid-cols-2 gap-4 mt-4">
                   <input
                     type="text"
                     value={area}
@@ -341,6 +415,60 @@ function Registration() {
                     className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-400"
                     placeholder="Country"
                   />
+                </div> */}
+                <div>
+                  {/* Pincode & Get Location */}
+                  <div className="flex gap-2 mt-4">
+                    <input
+                      type="text"
+                      value={pincode}
+                      onChange={handlePincodeChange}
+                      maxLength="6"
+                      className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-400"
+                      placeholder="Pincode"
+                    />
+                    <button
+                      onClick={fetchCurrentLocation}
+                      className=" px-4 py-2  bg-gray-400 text-white rounded-md"
+                    >
+                      <BiCurrentLocation size={22} />
+                    </button>
+                  </div>
+
+                  {/* Address Fields */}
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    <input
+                      type="text"
+                      value={area}
+                      onChange={(e) => setArea(e.target.value)}
+                      className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-400"
+                      placeholder="Area"
+                    />
+                    <input
+                      type="text"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-400"
+                      placeholder="City"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4 mt-4">
+                    <input
+                      type="text"
+                      value={state}
+                      onChange={(e) => setState(e.target.value)}
+                      className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-400"
+                      placeholder="State"
+                    />
+                    <input
+                      type="text"
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                      className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-400"
+                      placeholder="Country"
+                    />
+                  </div>
                 </div>
 
                 {/* Submit Button */}

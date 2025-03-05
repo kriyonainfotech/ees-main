@@ -275,20 +275,12 @@ const Profile = () => {
   const { user } = useContext(UserContext);
   console.log(user, "user---------------------------------");
 
-  // const [User, setUser] = useState(null);
-
-  // useEffect(() => {
-  //   setUser(user);
-  //   console.log(User, "User-----------------------------------");
-  // }, [user]);
-
   const [linkCopied, setLinkCopied] = useState(false);
   const location = useLocation();
   const [isKYCModalOpen, setIsKYCModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const navigate = useNavigate();
 
-  // const referralLink = `https://ess-frontend-eight.vercel.app/register?referralCode=${user?.referralCode}`;
   const referralLink = `${window.location.origin}/register?referralCode=${user?._id}`;
 
   useEffect(() => {

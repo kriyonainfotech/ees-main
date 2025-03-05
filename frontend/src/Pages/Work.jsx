@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useContext } from "react";
 import AdminNavbar from "../admincomponents/AdminNavbar";
 import UserSideBar from "../components/UserSideBar";
 import Recievedrequest from "../components/Recievedrequest";
@@ -9,6 +9,7 @@ import ProfileSidebar from "../components/ProfileSidebar";
 import Footer from "../components/Footer";
 import { TailSpin } from "react-loader-spinner";
 import toast from "react-hot-toast";
+import { UserContext } from "../UserContext";
 
 const backend_API = import.meta.env.VITE_API_URL;
 
@@ -19,7 +20,7 @@ const Work = () => {
   const [currentRequest, setCurrentRequest] = useState("Sended Request");
   const [loading, setLoading] = useState(true);
   const [showContent, setShowContent] = useState(false);
-
+  const { user } = useContext(UserContext);
   useEffect(() => {
     setTimeout(() => setShowContent(true), 50);
   }, []);
@@ -31,59 +32,69 @@ const Work = () => {
     { id: 2, name: "Received Request" },
   ];
 
-  const fetchRequests = useCallback(async (requestType) => {
-    if (!token) {
-      console.warn("⚠️ No authentication token found.");
-      toast.error("Authentication required!");
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    let endpoint =
-      requestType === "Sended Request"
-        ? `${backend_API}/request/getSentRequests`
-        : `${backend_API}/request/getReceivedRequests`;
-
-    try {
-      const response = await axios.get(endpoint, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      console.log(response.data, "response.data");
-
-      if (response.status === 200 && response.data) {
-        const priority = { pending: 1, accepted: 2, completed: 3, rated: 4, rejected: 5 };
-
-        const sortedRequests = (requestType === "Sended Request"
-          ? response.data.sendedRequests
-          : response.data.receivedRequests
-        )
-          ?.sort((a, b) => {
-            // Sort by status priority first, then by createdAt (most recent first)
-            const statusComparison = (priority[a.status] || 99) - (priority[b.status] || 99);
-            if (statusComparison !== 0) return statusComparison;
-            return new Date(b.date) - new Date(a.date); // Recent requests first
-          }) || [];
-
-        if (requestType === "Sended Request") {
-          setSendedRequest(sortedRequests);
-        } else {
-          setReceivedRequest(sortedRequests);
-        }
-      } else {
-        toast.error(response?.data?.message || "Error fetching requests");
+  const fetchRequests = useCallback(
+    async (requestType) => {
+      if (!token) {
+        console.warn("⚠️ No authentication token found.");
+        toast.error("Authentication required!");
+        setLoading(false);
+        return;
       }
-    } catch (error) {
-      console.log(error, "error");
-      toast.error(error?.response?.data?.message || "Server error");
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
+
+      setLoading(true);
+      let endpoint =
+        requestType === "Sended Request"
+          ? `${backend_API}/request/getSentRequests`
+          : `${backend_API}/request/getReceivedRequests`;
+
+      try {
+        const response = await axios.get(endpoint, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        console.log(response.data, "response.data");
+
+        if (response.status === 200 && response.data) {
+          const priority = {
+            pending: 1,
+            accepted: 2,
+            completed: 3,
+            rated: 4,
+            rejected: 5,
+          };
+
+          const sortedRequests =
+            (requestType === "Sended Request"
+              ? response.data.sendedRequests
+              : response.data.receivedRequests
+            )?.sort((a, b) => {
+              // Sort by status priority first, then by createdAt (most recent first)
+              const statusComparison =
+                (priority[a.status] || 99) - (priority[b.status] || 99);
+              if (statusComparison !== 0) return statusComparison;
+              return new Date(b.date) - new Date(a.date); // Recent requests first
+            }) || [];
+
+          if (requestType === "Sended Request") {
+            setSendedRequest(sortedRequests);
+          } else {
+            setReceivedRequest(sortedRequests);
+          }
+        } else {
+          toast.error(response?.data?.message || "Error fetching requests");
+        }
+      } catch (error) {
+        console.log(error, "error");
+        toast.error(error?.response?.data?.message || "Server error");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [token]
+  );
 
   useEffect(() => {
     fetchRequests(currentRequest);
@@ -103,7 +114,11 @@ const Work = () => {
                 {requests.map((req) => (
                   <div key={req.id} className="receivReqBtn">
                     <Link
-                      className={`btn rounded-lg ${currentRequest === req.name ? "btn-success text-white" : "bg-none border-black text-black"}`}
+                      className={`btn rounded-lg ${
+                        currentRequest === req.name
+                          ? "btn-success text-white"
+                          : "bg-none border-black text-black"
+                      }`}
                       onClick={() => setCurrentRequest(req.name)}
                     >
                       {req.name}
@@ -114,20 +129,28 @@ const Work = () => {
 
               <div className="mt-0">
                 {loading ? (
-                  <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "300px" }}>
+                  <div
+                    className="d-flex justify-content-center align-items-center"
+                    style={{ minHeight: "300px" }}
+                  >
                     <TailSpin color="#00BFFF" height={50} width={50} />
                   </div>
                 ) : currentRequest === "Received Request" ? (
-                  <Recievedrequest receivedRequest={receivedRequest} setReceivedRequest={setReceivedRequest} />
+                  <Recievedrequest
+                    receivedRequest={receivedRequest}
+                    setReceivedRequest={setReceivedRequest}
+                    user={user}
+                  />
                 ) : (
-                  <Senedrequest sendedRequest={sendedRequest} setSendedRequest={setSendedRequest} />
+                  <Senedrequest
+                    sendedRequest={sendedRequest}
+                    setSendedRequest={setSendedRequest}
+                  />
                 )}
-
               </div>
             </div>
           </div>
         </section>
-
       </div>
 
       <Footer />

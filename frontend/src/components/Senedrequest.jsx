@@ -10,8 +10,8 @@ import { UserContext } from "../UserContext";
 const backend_API = import.meta.env.VITE_API_URL;
 
 const Senedrequest = ({ sendedRequest, setSendedRequest }) => {
-  const user = useContext(UserContext);
-  // console.log(user.user._id)
+  const { user } = useContext(UserContext);
+
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [status, setStatus] = useState(null);
   const [rating, setRating] = useState(0);
@@ -19,7 +19,7 @@ const Senedrequest = ({ sendedRequest, setSendedRequest }) => {
   console.log(sendedRequest, "sendedRequest");
 
   const cancelRequest = (requestId) => {
-    const userId = user?.user?._id;
+    const userId = user?._id;
 
     if (!userId) {
       toast.error("User not found!");
@@ -148,6 +148,8 @@ const Senedrequest = ({ sendedRequest, setSendedRequest }) => {
       toast.error(error?.response?.data?.message || "Failed to submit rating.");
     }
   };
+  /*************  ✨ Codeium Command ⭐  *************/
+  /******  1392ad2d-976a-487a-b6c8-83392a95d7d7  *******/
   const renderStars = (
     ratingValue = 0,
     maxRating = 10,
@@ -160,14 +162,7 @@ const Senedrequest = ({ sendedRequest, setSendedRequest }) => {
         alt={i < ratingValue ? "Filled Star" : "Empty Star"}
         width={16}
         className={`cursor-pointer ${isClickable ? "hover:opacity-80" : ""}`}
-        onClick={
-          isClickable
-            ? () => {
-                console.log("Star Clicked:", i + 1);
-                setRating(i + 1);
-              }
-            : undefined
-        }
+        onClick={isClickable ? () => setRating(i + 1) : undefined}
       />
     ));
   };
@@ -314,7 +309,7 @@ const Senedrequest = ({ sendedRequest, setSendedRequest }) => {
   return (
     <div className="mt-0">
       <section>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mt-4">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mt-4">
           {sendedRequest?.length ? (
             sendedRequest.map((send, i) => (
               <div
@@ -328,13 +323,11 @@ const Senedrequest = ({ sendedRequest, setSendedRequest }) => {
                     ? "Request accepted, contact the user"
                     : ""
                 }
-                className={`bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden ${
-                  send.status === "rejected" ? "opacity-50 grayscale" : ""
-                }`}
+                className={`bg-white rounded-xl border overflow-hidden`}
               >
                 <div className="relative">
                   <img
-                    className="w-full h-[400px] object-cover object-top"
+                    className="w-full h-[250px] md:h-[400px] object-cover object-center"
                     src={send.profilePic || ProfileIcon}
                     alt="Profile"
                   />
@@ -344,13 +337,15 @@ const Senedrequest = ({ sendedRequest, setSendedRequest }) => {
                         ? "bg-blue-600"
                         : send.status === "completed"
                         ? "bg-green-600"
+                        : send.status === "rejected"
+                        ? "bg-red-600"
                         : "bg-yellow-500"
                     } text-white`}
                   >
                     {send.status || "Pending"}
                   </span>
                 </div>
-                <div className="p-3">
+                {/* <div className="p-3">
                   <h4 className="text-lg font-semibold text-gray-900">
                     {send.name || "Unknown User"}
                   </h4>
@@ -375,7 +370,6 @@ const Senedrequest = ({ sendedRequest, setSendedRequest }) => {
                     </span>
                   </div>
 
-                  {/* Buttons based on request status */}
                   <div className="mt-4 flex gap-2">
                     {send.status === "pending" && (
                       <>
@@ -432,6 +426,99 @@ const Senedrequest = ({ sendedRequest, setSendedRequest }) => {
                       </button>
                     )}
                   </div>
+                </div> */}
+
+                <div className="p-3 w-full sm:w-full">
+                  <h4 className="text-lg font-semibold text-gray-900">
+                    {send.name || "Unknown User"}
+                  </h4>
+
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-2">
+                    <p className="text-orange-600 text-sm font-medium capitalize">
+                      {send.businessCategory?.join(", ") || "N/A"}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {format(new Date(send.date), "PPpp")}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center mt-2 text-sm">
+                    <span className="text-gray-800 pe-2 whitespace-nowrap">
+                      User Rating:
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {renderStars(send?.providerrating?.value || 0, 10)}
+                    </div>
+                    <span className="ml-1 text-gray-700">
+                      {send?.providerrating?.value || 0}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 flex flex-col sm:flex-row gap-2 w-full">
+                    {send.status === "pending" && (
+                      <>
+                        <a
+                          href={`tel:${send.phone}`}
+                          className="w-full sm:flex-1 text-sm flex items-center justify-center gap-2 p-2 text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          <FaPhone /> Contact Now
+                        </a>
+                        <button
+                          className="w-full sm:w-auto p-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                          onClick={() => cancelRequest(send.requestId)}
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
+                    {send.status === "accepted" && (
+                      <>
+                        <a
+                          href={`tel:${send.phone}`}
+                          className="w-full sm:flex-1 flex items-center justify-center gap-2 p-2 text-sm text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          <FaPhone /> Contact Now
+                        </a>
+                        <button
+                          className="w-full sm:w-auto p-2 bg-blue-600 text-sm text-white rounded-lg hover:bg-blue-700 transition"
+                          onClick={() =>
+                            handleAction(
+                              send.receiverId,
+                              send.requestId,
+                              "completed"
+                            )
+                          }
+                        >
+                          Completed
+                        </button>
+                      </>
+                    )}
+                    {send.status === "completed" && (
+                      <button
+                        className="w-full sm:w-auto p-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition"
+                        onClick={() => openModal(send)}
+                      >
+                        Rate User
+                      </button>
+                    )}
+                    {send.status === "cancelled" && (
+                      <button
+                        className="w-full sm:w-auto p-2 bg-red-600 text-white rounded-lg hover:bg-red-900 transition"
+                        onClick={() => cancelRequest(send.requestId)}
+                      >
+                        Delete Request
+                      </button>
+                    )}
+                    {(send.status === "rejected" ||
+                      send.status === "rated") && (
+                      <button
+                        className="w-full sm:w-auto p-2 bg-gray-600 text-white rounded-lg hover:bg-red-900 transition"
+                        onClick={() => cancelRequest(send.requestId)}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))
@@ -481,6 +568,119 @@ const Senedrequest = ({ sendedRequest, setSendedRequest }) => {
       )}
     </div>
   );
+
+  // return (
+  //   <div className="mt-0">
+  //     <section>
+  //       <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-4">
+  //         {sendedRequest?.length ? (
+  //           sendedRequest.map((send, i) => (
+  //             <div
+  //               key={i}
+  //               title={
+  //                 send.status === "rejected"
+  //                   ? "Receiver has rejected the request."
+  //                   : send.status === "completed"
+  //                   ? "Reque  st completed, rate the user"
+  //                   : send.status === "accepted"
+  //                   ? "Request accepted, contact the user"
+  //                   : ""
+  //               }
+  //               className={`bg-white rounded-xl border overflow-hidden p-3 flex flex-col sm:block ${
+  //                 send.status === "rejected" ? "opacity-50 grayscale" : ""
+  //               }`}
+  //             >
+  //               <div className="flex sm:block items-center gap  -4">
+  //                 <img
+  //                   className="w-14 h-14 sm:w-full sm:h-[250px] md:h-[400px] object-cover object-center rounded-full sm:rounded-none"
+  //                   src={send.profilePic || ProfileIcon}
+  //                   alt="Profile"
+  //                 />
+  //                 <div className="flex-1">
+  //                   <h4 className="text-lg font-semibold text-gray-900">
+  //                     {send.name || "Unknown User"}
+  //                   </h4>
+  //                   <p className="text-orange-600 text-sm font-medium capitalize">
+  //                     {send.businessCategory?.join(", ") || "N/A"}
+  //                   </p>
+  //                   <p className="text-xs text-gray-500">
+  //                     {format(new Date(send.date), "PPpp")}
+  //                   </p>
+  //                 </div>
+  //                 <div className="flex w-full flex-col sm:flex-row text-center text-md-start gap-2 md:mt-6">
+  //                   {send.status === "pending" && (
+  //                     <>
+  //                       <a
+  //                         href={`tel:${send.phone}`}
+  //                         className="py-1 px-2 md:p-2 text-sm md:w-1/2 text-white bg-green-600 rounded-lg hover:bg-green-700"
+  //                       >
+  //                         Contact
+  //                       </a>
+  //                       <button
+  //                         className="py-1 px-2 md:p-2 md:w-1/2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700"
+  //                         onClick={() => cancelRequest(send.requestId)}
+  //                       >
+  //                         Delete
+  //                       </button>
+  //                     </>
+  //                   )}
+
+  //                   {send.status === "accepted" && (
+  //                     <>
+  //                       <a
+  //                         href={`tel:${send.phone}`}
+  //                         className="py-1 px-2 md:p-2 text-sm text-white bg-green-600 rounded-lg hover:bg-green-700"
+  //                       >
+  //                         Contact
+  //                       </a>
+  //                       <button
+  //                         className="py-1 px-2 md:p-2 bg-blue-600 text-sm text-white rounded-lg hover:bg-blue-700"
+  //                         onClick={() =>
+  //                           handleAction(
+  //                             send.receiverId,
+  //                             send.requestId,
+  //                             "completed"
+  //                           )
+  //                         }
+  //                       >
+  //                         Completed
+  //                       </button>
+  //                     </>
+  //                   )}
+
+  //                   {send.status === "completed" && (
+  //                     <button
+  //                       className="py-1 px-2 md:p-2 bg-yellow-600 text-sm text-white rounded-lg hover:bg-yellow-700"
+  //                       onClick={() => openModal(send)}
+  //                     >
+  //                       Rate User
+  //                     </button>
+  //                   )}
+
+  //                   {send.status === "cancelled" && (
+  //                     <button
+  //                       className="py-1 px-2 md:p-2 bg-red-600 text-sm text-white rounded-lg hover:bg-red-900"
+  //                       onClick={() => cancelRequest(send.requestId)}
+  //                     >
+  //                       Delete Request
+  //                     </button>
+  //                   )}
+  //                 </div>
+  //               </div>
+  //             </div>
+  //           ))
+  //         ) : (
+  //           <div className="col-span-3 text-center py-12">
+  //             <h5>No Requests Found</h5>
+  //             <p className="text-gray-500">
+  //               Your sent requests will appear here.
+  //             </p>
+  //           </div>
+  //         )}
+  //       </div>
+  //     </section>
+  //   </div>
+  // );
 };
 
 export default Senedrequest;
