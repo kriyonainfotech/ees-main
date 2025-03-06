@@ -2,12 +2,13 @@ const express = require("express");
 const router = express.Router();
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
-const { verifyToken } = require("../middleware/auth");
+const { verifyToken, isAdmin } = require("../middleware/auth");
 const {
-  requestWithdrawal,
+  addekyc,
   getWithdrawalRequests,
   verifyKYC,
   approveBankWithdrawal,
+  submitWithdrawalRequest,
 } = require("../controllers/withdrawalController");
 const multer = require("multer");
 
@@ -54,10 +55,11 @@ router.post(
     { name: "frontAadhar", maxCount: 1 },
     { name: "backAadhar", maxCount: 1 },
   ]),
-  requestWithdrawal
+  addekyc
 );
 
-router.get("/withdrawals", getWithdrawalRequests);
+router.post("/request",verifyToken, submitWithdrawalRequest);
+router.get("/withdrawals",isAdmin ,getWithdrawalRequests);
 router.post("/verifyKyc", verifyKYC);
 router.post("/approveKyc", approveBankWithdrawal);
 

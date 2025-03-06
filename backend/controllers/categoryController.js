@@ -90,8 +90,16 @@ const updateCategory = async (req, res) => {
     }
 
     category.image = imageUrl; // Ensure it matches the database field
+    const oldCategoryName = category.categoryName
     category.categoryName = categoryName;
     await category.save();
+
+
+    // **Update `businessCategory` in User model**
+    await User.updateMany(
+      { businessCategory: oldCategoryName }, // Find users with old category
+      { $set: { "businessCategory.$": categoryName } } // Update only the matched category
+    );
 
     res.status(200).json({
       success: true,

@@ -49,7 +49,7 @@ const Card = () => {
     try {
       const response = await axios.put(
         `${backend_API}/auth/setUserStatus`,
-        { userstatus: newStatus ? "available" : "unavailable" },
+        { userstatus: newStatus ? "available" : "unavaiilable" },
         {
           headers: {
             Authorization: `Bearer ${token}`,

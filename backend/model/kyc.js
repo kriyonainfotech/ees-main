@@ -16,7 +16,6 @@ const kycSchema = new mongoose.Schema({
     default: "pending",
   },
   requestedAt: { type: Date, default: Date.now },
-  verified: { type: Boolean, default: false },
 });
 
 const KYC = mongoose.model("KYC", kycSchema);

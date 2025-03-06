@@ -65,7 +65,7 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 3 * 1024 * 1024 }, // Set max file size to 1.5MB
+  // limits: { fileSize: 3 * 1024 * 1024 }, // Set max file size to 1.5MB
 });
 
 router.post(

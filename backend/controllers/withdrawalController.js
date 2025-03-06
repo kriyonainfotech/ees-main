@@ -9,7 +9,7 @@ const razorpayInstance = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-const requestWithdrawal = async (req, res) => {
+const addekyc = async (req, res) => {
   try {
     const userId = req.user.id;
     const { bankAccountNumber, accountHolderName, ifscCode, upiId, amount } =
@@ -118,25 +118,93 @@ const requestWithdrawal = async (req, res) => {
   }
 };
 
-const getWithdrawalRequests = async (req, res) => {
-  try {
-    // Fetch withdrawal requests and count
-    const withdrawals = await KYC.find().populate("userId", "name phone");
-    const count = await KYC.countDocuments();
 
-    res.status(200).json({
+const submitWithdrawalRequest = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { amount, upiId } = req.body;
+
+    console.log("📝 New withdrawal request received:", { userId, amount, upiId });
+
+    if (!amount) {
+      console.log("⚠️ Missing amount in request.");
+      return res.status(400).json({ message: "Amount is required." });
+    }
+
+    // Fetch user's KYC
+    console.log("🔍 Checking KYC for user:", userId);
+    const userKYC = await KYC.findOne({ userId });
+
+    if (!userKYC) {
+      console.log("❌ KYC not found for user:", userId);
+      return res.status(400).json({ message: "KYC not found. Please complete eKYC first." });
+    }
+
+    console.log("✅ KYC verified. Proceeding with withdrawal request.");
+
+    const newWithdrawal = new Withdrawal({
+      user: userId,
+      kyc: userKYC._id,
+      amount,
+      status: "pending",
+      payoutId: null,
+      processedAt: null,
+    });
+
+    await newWithdrawal.save();
+    console.log("💰 Withdrawal request saved successfully:", newWithdrawal);
+
+    res.status(200).send({ message: "Withdrawal request submitted successfully.", withdrawal: newWithdrawal });
+  } catch (error) {
+    console.log("❌ Server Error:", error);
+    res.status(500).json({ message: "Server error. Try again later." });
+  }
+}
+
+const getWithdrawalRequests = async (req, res) => {
+  // try {
+    // Fetch withdrawal requests and count
+  //   const withdrawals = await KYC.find().populate("userId", "name phone");
+  //   const count = await KYC.countDocuments();
+
+  //   res.status(200).json({
+  //     success: true,
+  //     message: "Withdrawal requests fetched successfully.",
+  //     count,
+  //     withdrawals,
+  //   });
+  // } catch (error) {
+  //   console.error("❌ Error fetching withdrawals:", error);
+  //   res.status(500).json({
+  //     success: false,
+  //     message: "Server error. Try again later.",
+  //     error: error.message,
+  //   });
+  // }
+
+     try {
+    console.log("📥 Fetching all withdrawal requests...");
+
+    const withdrawals = await Withdrawal.find()
+      .populate("user", "name phone")
+      .populate("kyc") // Populating KYC details
+      .sort({ createdAt: -1 });
+
+    const totalWithdrawals = await Withdrawal.countDocuments();
+    const pendingWithdrawals = await Withdrawal.countDocuments({ status: "pending" });
+
+    console.log(`✅ Total: ${totalWithdrawals}, Pending: ${pendingWithdrawals}`);
+
+       res.status(200).json({
       success: true,
-      message: "Withdrawal requests fetched successfully.",
-      count,
+      message: "All withdrawal requests fetched successfully.",
+      totalWithdrawals,
+      count: pendingWithdrawals,
       withdrawals,
     });
   } catch (error) {
-    console.error("❌ Error fetching withdrawals:", error);
-    res.status(500).json({
-      success: false,
-      message: "Server error. Try again later.",
-      error: error.message,
-    });
+    console.log("❌ Server Error:", error);
+    res.status(500).json({ message: "Server error. Try again later." });
   }
 };
 
@@ -171,7 +239,6 @@ const verifyKYC = async (req, res) => {
     });
   }
 };
-
 
 const processUPIPayout = async (withdrawal) => {
   try {
@@ -606,8 +673,8 @@ const approveBankWithdrawal = async (req, res) => {
 module.exports = {
   getWithdrawalRequests,
   verifyKYC,
-  requestWithdrawal,
+  addekyc,
   processUPIPayout,
   approveWithdrawal,
-  approveBankWithdrawal,
+  approveBankWithdrawal,submitWithdrawalRequest
 };

@@ -14,13 +14,21 @@ const PendingWithdrwals = () => {
   useEffect(() => {
     const fetchWithdrawals = async () => {
       try {
-        const { data } = await axios.get(
-          `${backend_API}/withdrawal/withdrawals`
+        const response = await axios.get(
+          `${backend_API}/withdrawal/withdrawals`,
+          {
+            withCredentials: true,
+          }
         ); // Adjust API URL if needed
-        console.log(data, "data");
-        if (data.success) {
-          setWithdrawalCount(data.count);
-          setWithdrawals(data.withdrawals);
+        console.log("Full API Response:", response);
+        console.log("Response Data:", response.data);
+
+        if (response.data?.success) {
+          console.log("✅ Success Condition Passed!");
+          setWithdrawalCount(response.data.count);
+          setWithdrawals(response.data.withdrawals);
+        } else {
+          console.warn("⚠️ Success condition did not pass.", response.data);
         }
       } catch (error) {
         console.error("❌ Error fetching withdrawals:", error);

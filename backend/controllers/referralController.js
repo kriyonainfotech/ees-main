@@ -6,38 +6,66 @@ const mongoose = require("mongoose");
 const getReferrals = async (req, res) => {
   try {
     const userId = req.params.id;
-
-    // Find the user and populate their referrals up to 3 levels
-    const user = await UserModel.findById(userId)
-      .select("name phone email referrals paymentVerified")
+     const user = await UserModel.findById(userId)
+      .select("name phone email paymentVerified")
       .populate({
         path: "referrals",
-        select: "name phone email referrals paymentVerified",
-        populate: {
-          path: "referrals",
-          select: "name phone email referrals",
-          populate: {
-            path: "referrals",
-            select: "name phone email",
-          },
-        },
+        select: "name phone email profilePic paymentVerified createdAt",
       });
 
     if (!user) {
-      return res.status(404).send({
+      return res.status(404).json({
         success: false,
         message: "User not found",
       });
     }
 
+     // Get second-level referrals count
+       const referralsWithCounts = await Promise.all(
+      user.referrals.map(async (ref) => {
+        const secondLevelCount = await UserModel.countDocuments({ referredBy: ref._id });
+        return { ...ref.toObject(), secondLevelReferralCount: secondLevelCount };
+      })
+    );
+
+    console.log(user.referrals, "ru");
+    return res.status(200).json({
+      success: true,
+      user,
+      referredUsers: referralsWithCounts, // Direct referrals only
+      referralCounts:user.referrals.length, 
+    });
+    // Find the user and populate their referrals up to 3 levels
+    // const user = await UserModel.findById(userId)
+    //   .select("name phone email referrals paymentVerified")
+    //   .populate({
+    //     path: "referrals",
+    //     select: "name phone email referrals paymentVerified",
+    //     populate: {
+    //       path: "referrals",
+    //       select: "name phone email referrals",
+    //       populate: {
+    //         path: "referrals",
+    //         select: "name phone email",
+    //       },
+    //     },
+    //   });
+
+    // if (!user) {
+    //   return res.status(404).send({
+    //     success: false,
+    //     message: "User not found",
+    //   });
+    // }
+
     // Find users who registered with this user's referral code
-    const referredUsers = await UserModel.find({ referredBy: userId })
-      .select("name phone email referrals paymentVerified")
-      .populate({
-        path: "referrals",
-        select: "name phone email",
-      });
-    console.log(referredUsers, "ru");
+    // const referredUsers = await UserModel.find({ referredBy: userId })
+    //   .select("name phone email referrals paymentVerified") 
+    //   .populate({
+    //     path: "referrals",
+    //     select: "name phone email",
+    //   });
+    // console.log(referredUsers, "ru");
     // // Function to recursively count referrals
     // const countReferrals = (referrals) => {
     //   let count = referrals.length;
@@ -53,21 +81,21 @@ const getReferrals = async (req, res) => {
     // const directReferralCount = user.referrals.length;
     // const totalReferralCount = countReferrals(user.referrals);
 
-    return res.status(200).send({
-      success: true,
-      user: {
-        id: user._id,
-        name: user.name,
-        phone: user.phone,
-        email: user.email,
-        referrals: user.referrals, // Direct referrals
-        // referralCounts: {
-        //   direct: directReferralCount,
-        //   total: totalReferralCount, // Includes all levels
-        // },
-      },
-      referredUsers, // Users who used this user's referral code
-    });
+    // return res.status(200).send({
+    //   success: true,
+    //   user: {
+    //     id: user._id,
+    //     name: user.name,
+    //     phone: user.phone,
+    //     email: user.email,
+    //     referrals: user.referrals, // Direct referrals
+    //     // referralCounts: {
+    //     //   direct: directReferralCount,
+    //     //   total: totalReferralCount, // Includes all levels
+    //     // },
+    //   },
+    //   referredUsers, // Users who used this user's referral code
+    // });
   } catch (error) {
     console.error(error);
     return res.status(500).send({

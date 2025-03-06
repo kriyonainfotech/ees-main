@@ -322,7 +322,7 @@ const getSentRequests = async (req, res) => {
         providerrating: req.providerrating,
       })) || [];
 
-    console.log(`✅ [SUCCESS] Retrieved ${sendedRequests} sent requests.`);
+    console.log(`✅ [SUCCESS] Retrieved ${sendedRequests.length} sent requests.`);
 
     return res.status(200).json({
       success: true,
@@ -363,7 +363,7 @@ const getReceivedRequests = async (req, res) => {
         options: { lean: true },
       })
       .lean();
-    console.log(user, "user");
+    // console.log(user, "user");
     if (!user) {
       console.warn(`❌ [WARN] User with ID ${userId} not found.`);
       return res
@@ -395,7 +395,7 @@ const getReceivedRequests = async (req, res) => {
       })) || [];
 
     console.log(
-      `✅ [SUCCESS] Retrieved ${receivedRequests} received requests.`
+      // `✅ [SUCCESS] Retrieved ${receivedRequests.length} received requests.`
     );
     return res.status(200).json({
       success: true,

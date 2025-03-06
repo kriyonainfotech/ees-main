@@ -17,7 +17,9 @@ const Work = () => {
   const token = JSON.parse(localStorage.getItem("token")) || null;
   const [receivedRequest, setReceivedRequest] = useState([]);
   const [sendedRequest, setSendedRequest] = useState([]);
-  const [currentRequest, setCurrentRequest] = useState("Sended Request");
+  const [currentRequest, setCurrentRequest] = useState(
+    localStorage.getItem("currentRequest") || "Sended Request"
+  );
   const [loading, setLoading] = useState(true);
   const [showContent, setShowContent] = useState(false);
   const { user } = useContext(UserContext);
@@ -27,24 +29,29 @@ const Work = () => {
 
   console.log(receivedRequest, "receivedRequest");
 
+  // Save currentRequest to localStorage
+  useEffect(() => {
+    localStorage.setItem("currentRequest", currentRequest);
+  }, [currentRequest]);
+
   const requests = [
     { id: 1, name: "Sended Request" },
     { id: 2, name: "Received Request" },
   ];
 
   const fetchRequests = useCallback(
-    async (requestType) => {
+    async (currentRequest) => {
       if (!token) {
         console.warn("⚠️ No authentication token found.");
         toast.error("Authentication required!");
         setLoading(false);
         return;
       }
-
+      console.log("Fetching requests...", currentRequest);
       setLoading(true);
       let endpoint =
-        requestType === "Sended Request"
-          ? `${backend_API}/request/getSentRequests`
+        currentRequest === "Sended Request"
+          ? `${backend_API}/request/getSentRequests` // Corrected typo
           : `${backend_API}/request/getReceivedRequests`;
 
       try {
@@ -55,7 +62,7 @@ const Work = () => {
           },
         });
 
-        console.log(response.data, "response.data");
+        console.log(response.data, "response----------------------------.data");
 
         if (response.status === 200 && response.data) {
           const priority = {
@@ -67,7 +74,7 @@ const Work = () => {
           };
 
           const sortedRequests =
-            (requestType === "Sended Request"
+            (currentRequest === "Sended Request"
               ? response.data.sendedRequests
               : response.data.receivedRequests
             )?.sort((a, b) => {
@@ -78,7 +85,7 @@ const Work = () => {
               return new Date(b.date) - new Date(a.date); // Recent requests first
             }) || [];
 
-          if (requestType === "Sended Request") {
+          if (currentRequest === "Sended Request") {
             setSendedRequest(sortedRequests);
           } else {
             setReceivedRequest(sortedRequests);
@@ -93,12 +100,12 @@ const Work = () => {
         setLoading(false);
       }
     },
-    [token]
+    [token, currentRequest]
   );
 
   useEffect(() => {
     fetchRequests(currentRequest);
-  }, [currentRequest, fetchRequests]);
+  }, [currentRequest]);
 
   return showContent ? (
     <>
@@ -106,7 +113,7 @@ const Work = () => {
       <UserSideBar />
       <ProfileSidebar />
 
-      <div className="mt-40">
+      {/* <div className="mt-40">
         <section className="bg-gray-50 py-5">
           <div className="container">
             <div className="row">
@@ -128,6 +135,69 @@ const Work = () => {
               </div>
 
               <div className="mt-0">
+                {loading ? (
+                  <div
+                    className="d-flex justify-content-center align-items-center"
+                    style={{ minHeight: "300px" }}
+                  >
+                    <TailSpin color="#00BFFF" height={50} width={50} />
+                  </div>
+                ) : currentRequest === "Received Request" ? (
+                  <Recievedrequest
+                    receivedRequest={receivedRequest}
+                    setReceivedRequest={setReceivedRequest}
+                    user={user}
+                  />
+                ) : (
+                  <Senedrequest
+                    sendedRequest={sendedRequest}
+                    setSendedRequest={setSendedRequest}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      </div> */}
+      <div className="mt-40">
+        <section className="bg-gray-50 py-5">
+          <div className="container">
+            <div className="row">
+              {/* Sticky Buttons in Current Position */}
+              <div
+                className="col-12 d-flex gap-3 bg-white "
+                style={{
+                  position: "sticky",
+                  top: "0",
+
+                  zIndex: 10,
+                  padding: "20px 10px",
+                }}
+              >
+                {requests.map((req) => (
+                  <div key={req.id} className="receivReqBtn">
+                    <Link
+                      className={`btn rounded-lg ${
+                        currentRequest === req.name
+                          ? "btn-success text-white"
+                          : "bg-none border-black text-black"
+                      }`}
+                      onClick={() => setCurrentRequest(req.name)}
+                    >
+                      {req.name}
+                    </Link>
+                  </div>
+                ))}
+              </div>
+
+              {/* Scrollable Requests */}
+              <div
+                style={{
+                  maxHeight: "600px", // Adjust height as needed
+                  overflowY: "auto",
+                  paddingTop: "10px",
+                }}
+              >
                 {loading ? (
                   <div
                     className="d-flex justify-content-center align-items-center"

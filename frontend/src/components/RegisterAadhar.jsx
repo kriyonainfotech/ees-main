@@ -38,10 +38,10 @@ const RegisterAadhar = () => {
     const file = e.target.files[0];
 
     if (file) {
-      if (file.size > MAX_FILE_SIZE) {
-        toast.error("Captured image is too large. Please try again.");
-        return;
-      }
+      // if (file.size > MAX_FILE_SIZE) {
+      //   toast.error("Captured image is too large. Please try again.");
+      //   return;
+      // }
 
       const blobUrl = URL.createObjectURL(file);
       console.log(blobUrl);

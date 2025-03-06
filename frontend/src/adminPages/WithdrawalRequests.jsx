@@ -10,47 +10,53 @@ const backend_API = import.meta.env.VITE_API_URL;
 
 const WithdrawalRequests = () => {
   const location = useLocation();
-  const withdrawals = location.state?.withdrawals || [];
-  console.log(withdrawals, 'withdrawals')
+  const withdrawals = location?.state?.withdrawals || [];
+  console?.log(withdrawals, "withdrawals");
   const [selectedImage, setSelectedImage] = useState(null);
   const navigate = useNavigate();
 
-
   const handleVerifyKyc = async (kycId) => {
     try {
-      const { data } = await axios.post(`${backend_API}/withdrawal/verifyKyc`, { kycId });
-      console.log(data, 'data verify kyc')
-      if (data.success === 200) {
-        toast.success("KYC Verified Successfully!");
+      const { data } = await axios.post(`${backend_API}/withdrawal/verifyKyc`, {
+        kycId,
+      });
+      console?.log(data, "data verify kyc");
+      if (data?.success === 200) {
+        toast?.success("KYC Verified Successfully!");
       }
       // Refresh or update state
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to verify KYC.");
+      toast?.error(error?.response?.data?.message || "Failed to verify KYC?.");
     }
   };
 
   const approvePayout = async (kycId, amount) => {
     try {
-      const { data } = await axios.post(`${backend_API}/withdrawal/approveKyc`, { kycId, amount });
+      const { data } = await axios.post(
+        `${backend_API}/withdrawal/approveKyc`,
+        { kycId, amount }
+      );
 
-      console.log(data, 'resposne ')
-      if (data.success === 200) {
-        toast.success("Payout Approved Successfully!");
+      console?.log(data, "resposne ");
+      if (data?.success === 200) {
+        toast?.success("Payout Approved Successfully!");
       }
       // Refresh or update state
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to approve payout.");
+      toast?.error(
+        error?.response?.data?.message || "Failed to approve payout?."
+      );
     }
-  }
+  };
 
   const handleApprovePayout = async (kycId, amount) => {
-    toast.info(
+    toast?.info(
       <div>
         <p>Are you sure you want to approve this payout?</p>
         <div className="flex gap-2 mt-2">
           <button
             onClick={() => {
-              toast.dismiss();
+              toast?.dismiss();
               approvePayout(kycId, amount); // Call your API function
             }}
             className="px-3 py-1 bg-green-500 text-white rounded"
@@ -58,7 +64,7 @@ const WithdrawalRequests = () => {
             Yes
           </button>
           <button
-            onClick={() => toast.dismiss()}
+            onClick={() => toast?.dismiss()}
             className="px-3 py-1 bg-gray-400 text-white rounded"
           >
             No
@@ -84,13 +90,13 @@ const WithdrawalRequests = () => {
             ⬅ Back
           </button>
         </div>
-        {withdrawals.length === 0 ? (
-          <p className="text-gray-600">No withdrawal requests found.</p>
+        {withdrawals?.length === 0 ? (
+          <p className="text-gray-600">No withdrawal requests found?.</p>
         ) : (
           <div className="bg-white shadow-md rounded-lg overflow-hidden">
-            <div className="overflow-auto max-h-[500px]">
-              <table className="w-full text-left border-collapse min-w-[800px]">
-                <thead className="bg-gray-500 text-white">
+            <div className="table-container overflow-auto max-h-[100vh]">
+              <table className="w-full text-left table table-bordered border-collapse min-w-[800px] border">
+                <thead className="bg-gray-500 text-white sticky top-0 z-50">
                   <tr>
                     <th className="p-3">Sr.no</th>
                     <th className="p-3">UserName</th>
@@ -101,71 +107,92 @@ const WithdrawalRequests = () => {
                     <th className="p-3">Bank Proof</th>
                     <th className="p-3">PAN Front</th>
                     <th className="p-3">PAN Back</th>
-                    <th className="p-3">Status</th>
+                    <th className="p-3">E-KYC Status</th>
                     <th className="p-3">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {withdrawals.map((withdrawal, index) => (
-                    <tr key={index} className="border-b hover:bg-gray-100 transition">
+                  {withdrawals?.map((withdrawal, index) => (
+                    <tr
+                      key={index}
+                      className="border-b hover:bg-gray-100 transition"
+                    >
                       <td className="p-3">{index + 1}</td>
-                      <td className="p-3">{withdrawal.userId.name || "N/A"}</td>
-                      <td className="p-3">{withdrawal.userId.phone || "N/A"}</td>
-                      <td className="p-3">{withdrawal.bankAccountNumber}</td>
-                      <td className="p-3">{withdrawal.ifscCode}</td>
-                      <td className="p-3">₹{withdrawal.amount}</td>
+                      {/* <td className="p-3">{withdrawal?.user?.user?.name || "N/A"}</td> */}
+                      <td className="p-3">{withdrawal?.user?.name || "N/A"}</td>
+                      <td className="p-3">
+                        {withdrawal?.user?.phone || "N/A"}
+                      </td>
+                      <td className="p-3">
+                        {withdrawal?.kyc?.bankAccountNumber}
+                      </td>
+                      <td className="p-3">{withdrawal?.kyc?.ifscCode}</td>
+                      <td className="p-3">₹{withdrawal?.amount}</td>
                       <td className="p-3">
                         <img
-                          src={withdrawal.bankProof}
+                          src={withdrawal?.kyc?.bankProof}
                           alt="Bank Proof"
                           className="w-12 h-12 cursor-pointer rounded-md border"
-                          onClick={() => setSelectedImage(withdrawal.bankProof)}
+                          onClick={() =>
+                            setSelectedImage(withdrawal?.kyc?.bankProof)
+                          }
                         />
                       </td>
                       <td className="p-3">
                         <img
-                          src={withdrawal.panCardfront}
+                          src={withdrawal?.kyc?.panCardfront}
                           alt="PAN Front"
                           className="w-12 h-12 cursor-pointer rounded-md border"
-                          onClick={() => setSelectedImage(withdrawal.panCardfront)}
+                          onClick={() =>
+                            setSelectedImage(withdrawal?.kyc?.panCardfront)
+                          }
                         />
                       </td>
                       <td className="p-3">
                         <img
-                          src={withdrawal.panCardback}
+                          src={withdrawal?.kyc?.panCardback}
                           alt="PAN Back"
                           className="w-12 h-12 cursor-pointer rounded-md border"
-                          onClick={() => setSelectedImage(withdrawal.panCardback)}
+                          onClick={() =>
+                            setSelectedImage(withdrawal?.kyc?.panCardback)
+                          }
                         />
                       </td>
                       <td className="p-3">
                         <span
-                          className={`px-2 py-1 rounded ${withdrawal.status === "pending"
-                            ? "bg-yellow-500 text-white"
-                            : "bg-green-500 text-white"
-                            }`}
+                          className={`px-2 py-1 rounded ${
+                            withdrawal?.kyc?.status === "pending"
+                              ? "bg-yellow-500 text-white"
+                              : "bg-green-500 text-white"
+                          }`}
                         >
-                          {withdrawal.status}
+                          {withdrawal?.kyc?.status}
                         </span>
                       </td>
                       <td className="p-3 gap-2">
-                        {withdrawal.verified ? (
+                        {withdrawal?.kyc?.status === "approved" ? (
                           <button
-                            onClick={() => handleApprovePayout(withdrawal._id, withdrawal.amount)}
-                            className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                            onClick={() =>
+                              toast("Payout's Work is Under Development")
+                            }
+                            // handleApprovePayout(
+                            //   withdrawal?.user?._id,
+                            //   withdrawal?.user?.amount
+                            // )
+
+                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-green-600"
                           >
                             Approve Payout
                           </button>
                         ) : (
                           <button
-                            onClick={() => handleVerifyKyc(withdrawal._id)}
-                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                            disabled
+                            className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-blue-600"
                           >
-                            Verify KYC
+                            Approve Payout
                           </button>
                         )}
                       </td>
-
                     </tr>
                   ))}
                 </tbody>
@@ -176,7 +203,7 @@ const WithdrawalRequests = () => {
 
         {/* Image Modal */}
         {selectedImage && (
-          <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-75">
+          <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-75 z-50">
             <div className="relative">
               <button
                 className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full"
@@ -184,7 +211,11 @@ const WithdrawalRequests = () => {
               >
                 ✕
               </button>
-              <img src={selectedImage} alt="Preview" className="max-w-full max-h-[90vh] rounded-lg shadow-lg" />
+              <img
+                src={selectedImage}
+                alt="Preview"
+                className="max-w-full max-h-[60vh] rounded-lg shadow-lg"
+              />
             </div>
           </div>
         )}
