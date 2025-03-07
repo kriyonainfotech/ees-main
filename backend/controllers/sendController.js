@@ -156,7 +156,7 @@ const getNotificationsMobile = async (req, res) => {
   try {
     const { userId } = req.body; // Expecting userId from the request body
 
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select("notifications");
 
     if (!user) {
       return res.status(404).json({
@@ -164,7 +164,7 @@ const getNotificationsMobile = async (req, res) => {
         message: "User not found.",
       });
     }
-
+    console.log(user, "user");
     // Return the user's notifications
     return res.status(200).json({
       success: true,

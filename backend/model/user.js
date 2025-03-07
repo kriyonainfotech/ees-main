@@ -117,6 +117,11 @@ const userSchema = new mongoose.Schema(
           comment: { type: String, default: null },
           date: { type: Date, default: Date.now },
         },
+        givenByreceiverRating: {
+          value: { type: Number, min: 1, max: 10, default: null },
+          comment: { type: String, default: null },
+          date: { type: Date, default: Date.now },
+        },
       },
     ],
 
@@ -144,6 +149,11 @@ const userSchema = new mongoose.Schema(
         date: { type: Date, default: Date.now },
 
         userrating: {
+          value: { type: Number, min: 1, max: 10, default: null },
+          comment: { type: String, default: null },
+          date: { type: Date, default: Date.now },
+        },
+         givenBysenderRating: {
           value: { type: Number, min: 1, max: 10, default: null },
           comment: { type: String, default: null },
           date: { type: Date, default: Date.now },

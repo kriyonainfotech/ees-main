@@ -584,6 +584,13 @@ const registerUserweb = async (req, res) => {
     await user.save();
     console.log("[SUCCESS] ✅ User registration completed!", user);
 
+    if (referrer) {
+      await UserModel.findByIdAndUpdate(referrer?._id, {
+        $push: { referrals: user._id },
+      });
+     console.log(`[INFO] 🔗 User added to ${referrer?._id}'s referral list`);
+    }
+      
     // 7️⃣ Notify Referrer
     await notifyReferrer(referrer, name);
 
@@ -1341,51 +1348,59 @@ const setUserStatus = async (req, res) => {
   }
 };
 
-const setUserStatusMobile = async (req, res) => {
+const setUserStatusMobile = async (req, res) => { 
   try {
-    const userId = req.body.userId; // Extract userId from request body
-    const { userstatus } = req.body;
+    console.log("🔍 Received request to update user status");
 
-    // Validate userId
+    const { userId, userstatus } = req.body;
+
+    // Ensure user ID is provided
     if (!userId) {
+      console.log("❌ User ID missing in request");
       return res.status(400).json({
         success: false,
         message: "User ID is required",
       });
     }
 
-    // Validate userstatus
+    // Validate status
     if (!userstatus || !["available", "unavailable"].includes(userstatus)) {
+      console.log("❌ Invalid status value:", userstatus);
       return res.status(400).json({
         success: false,
-        message:
-          "Invalid status value. Please choose 'available' or 'unavailable'.",
+        message: "Invalid status value. Use 'available' or 'unavailable'.",
       });
     }
 
-    // Update user status in the database
-    const updatedUserstatus = await UserModel.findByIdAndUpdate(
+    console.log(`🛠 Updating status for user ${userId} to ${userstatus}`);
+
+    // Measure query execution time
+    const startTime = Date.now();
+    const updatedUser = await UserModel.findByIdAndUpdate(
       userId,
-      { userstatus },
-      { new: true, runValidators: true } // Ensure validation is applied
+      { $set: { userstatus } },
+      { new: true, select: "userstatus" }
     );
 
-    // If user not found, return an error
-    if (!updatedUserstatus) {
+    const endTime = Date.now();
+    console.log(`✅ Database update completed in ${endTime - startTime}ms`);
+
+    if (!updatedUser) {
+      console.log("❌ User not found:", userId);
       return res.status(404).json({
         success: false,
         message: "User not found",
       });
     }
 
-    // Respond with success
+    console.log("✅ User status updated successfully:", updatedUser.userstatus);
     return res.status(200).json({
       success: true,
       message: `User status updated to ${userstatus}`,
-      user: updatedUserstatus,
+      user: updatedUser,
     });
   } catch (error) {
-    console.error(error);
+    console.error("🔥 Error in setUserStatus:", error);
     return res.status(500).json({
       success: false,
       message: "An error occurred while updating the user status",
@@ -1393,6 +1408,7 @@ const setUserStatusMobile = async (req, res) => {
     });
   }
 };
+
 
 const updateRoleByEmail = async (req, res) => {
   try {

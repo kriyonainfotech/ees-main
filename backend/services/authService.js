@@ -35,6 +35,7 @@ const parseAddress = (address) => {
 
 // ✅ 3. Check if User Already Exists
 const checkExistingUser = async (email, phone) => {
+  console.log(email, 'email');
   const existingUser = await UserModel.findOne({ $or: [{ email }, { phone }] });
   if (existingUser) {
     throw new Error(
@@ -65,6 +66,8 @@ const findReferrer = async (referralCode) => {
 // ✅ 5. Notify Referrer
 const notifyReferrer = async (referrer, userName) => {
   if (referrer && referrer.fcmToken) {
+
+    
     await sendNotification({
       type: "referral",
       senderName: "System",

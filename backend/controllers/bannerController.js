@@ -169,14 +169,14 @@ const getUserByBannerMobile = async (req, res) => {
     // Find the user associated with the banner
     const user = await UserModel.findById(
       banner.userId,
-      "name email profilePic address businessCategory userAverageRating userstatus"
+      "name email profilePic address businessCategory providerAverageRating userstatus"
     );
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({success:false, message: "User not found" });
     }
 
     // Return the user data
-    return res.status(200).json({ user });
+    return res.status(200).send({success:true, user });
   } catch (error) {
     console.error("Error fetching user data by bannerId:", error);
     return res.status(500).json({ message: "Internal server error" });

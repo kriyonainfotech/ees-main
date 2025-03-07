@@ -9,6 +9,136 @@ const updateAverage = (ratingsArray) => {
   ).toFixed(1);
 };
 
+// const addRating = async (req, res) => {
+//   try {
+//     const { requestId, receiverId, ratingValue, comment } = req.body;
+//     const senderId = req.user.id;
+
+//     if (!requestId || !senderId || !receiverId || !ratingValue) {
+//       return res.status(400).json({ message: "❌ Missing required fields" });
+//     }
+
+//     if (ratingValue < 1 || ratingValue > 10) {
+//       return res
+//         .status(400)
+//         .json({ message: "⚠️ Rating must be between 1 and 10" });
+//     }
+
+//     const sender = await UserModel.findById(senderId);
+//     const receiver = await UserModel.findById(receiverId);
+//     if (!sender || !receiver) {
+//       return res.status(404).json({ message: "❌ User not found" });
+//     }
+
+//     const objectIdRequestId = new mongoose.Types.ObjectId(requestId);
+
+//     // Check if request is completed
+//     const sentRequest = sender.sended_requests?.find(
+//       (req) =>
+//         req.requestId?.toString() === objectIdRequestId.toString() &&
+//         req.status === "completed"
+//     );
+//     const receivedRequest = sender.received_requests?.find(
+//       (req) =>
+//         req.requestId?.toString() === objectIdRequestId.toString() &&
+//         req.status === "completed"
+//     );
+
+//     if (!sentRequest && !receivedRequest) {
+//       return res
+//         .status(400)
+//         .json({ message: "⚠️ No completed request found for rating" });
+//     }
+
+//     // ✅ Sender is rating the receiver (Provider Rating)
+//     if (sentRequest) {
+//       await UserModel.updateOne(
+//         { _id: receiverId },
+//         {
+//           $push: {
+//             providerRatings: {
+//               rater: senderId,
+//               rating: ratingValue,
+//               comment,
+//               date: new Date(),
+//             },
+//           },
+//         }
+//       );
+
+//       const updatedReceiver = await UserModel.findById(receiverId);
+//       const providerAverageRating = updateAverage(
+//         updatedReceiver.providerRatings ?? []
+//       );
+
+//       await UserModel.updateOne(
+//         { _id: receiverId },
+//         { $set: { providerAverageRating } }
+//       );
+
+//       await UserModel.updateOne(
+//         { _id: senderId, "sended_requests.requestId": requestId },
+//         {
+//           $set: {
+//             "sended_requests.$.providerrating": {
+//               value: ratingValue,
+//               comment,
+//               date: new Date(),
+//             },
+//             "sended_requests.$.status": "rated",
+//           },
+//         }
+//       );
+//     }
+
+//     // ✅ Receiver is rating the sender (User Rating)
+//     if (receivedRequest) {
+//       await UserModel.updateOne(
+//         { _id: senderId },
+//         {
+//           $push: {
+//             userRatings: {
+//               rater: receiverId,
+//               rating: ratingValue,
+//               comment,
+//               date: new Date(),
+//             },
+//           },
+//         }
+//       );
+
+//       const updatedSender = await UserModel.findById(senderId);
+//       const userAverageRating = updateAverage(updatedSender.userRatings ?? []);
+
+//       await UserModel.updateOne(
+//         { _id: senderId },
+//         { $set: { userAverageRating } }
+//       );
+
+//       await UserModel.updateOne(
+//         { _id: senderId, "received_requests.requestId": requestId },
+//         {
+//           $set: {
+//             "received_requests.$.userrating": {
+//               value: ratingValue,
+//               comment,
+//               date: new Date(),
+//             },
+//             "received_requests.$.status": "rated",
+//           },
+//         }
+//       );
+//     }
+
+//     return res.json({
+//       success: true,
+//       message: "⭐ Rating submitted successfully!",
+//     });
+//   } catch (error) {
+//     console.error("❌ Error adding rating:", error);
+//     return res.status(500).json({ message: "🚨 Server error" });
+//   }
+// };
 const addRating = async (req, res) => {
   try {
     const { requestId, receiverId, ratingValue, comment } = req.body;
@@ -51,7 +181,7 @@ const addRating = async (req, res) => {
     }
 
     // ✅ Sender is rating the receiver (Provider Rating)
-    if (sentRequest) {
+  if (sentRequest) {
       await UserModel.updateOne(
         { _id: receiverId },
         {
@@ -63,7 +193,15 @@ const addRating = async (req, res) => {
               date: new Date(),
             },
           },
-        }
+          $set: {
+            "received_requests.$[elem].givenBysenderRating": {
+              value: ratingValue,
+              comment,
+              date: new Date(),
+            },
+          },
+        },
+        { arrayFilters: [{ "elem.requestId": objectIdRequestId }] }
       );
 
       const updatedReceiver = await UserModel.findById(receiverId);
@@ -91,44 +229,59 @@ const addRating = async (req, res) => {
       );
     }
 
-    // ✅ Receiver is rating the sender (User Rating)
-    if (receivedRequest) {
-      await UserModel.updateOne(
-        { _id: senderId },
-        {
-          $push: {
-            userRatings: {
-              rater: receiverId,
-              rating: ratingValue,
-              comment,
-              date: new Date(),
-            },
-          },
-        }
-      );
-
-      const updatedSender = await UserModel.findById(senderId);
-      const userAverageRating = updateAverage(updatedSender.userRatings ?? []);
-
-      await UserModel.updateOne(
-        { _id: senderId },
-        { $set: { userAverageRating } }
-      );
-
-      await UserModel.updateOne(
-        { _id: senderId, "received_requests.requestId": requestId },
-        {
-          $set: {
-            "received_requests.$.userrating": {
-              value: ratingValue,
-              comment,
-              date: new Date(),
-            },
-            "received_requests.$.status": "rated",
-          },
-        }
-      );
+if (receivedRequest) {
+  await UserModel.updateOne(
+    { _id: senderId },
+    {
+      $push: {
+        userRatings: {
+          rater: receiverId,
+          rating: ratingValue,
+          comment,
+          date: new Date(),
+        },
+      },
     }
+  );
+
+  // ✅ Store the rating in sender's received_requests as givenByreceiverRating
+  await UserModel.updateOne(
+    { _id: receiverId, "received_requests.requestId": requestId },
+    {
+      $set: {
+        "received_requests.$.givenByreceiverRating": {
+          value: ratingValue,
+          comment,
+          date: new Date(),
+        },
+      },
+    }
+  );
+
+  // ✅ Calculate new average user rating
+  const updatedSender = await UserModel.findById(senderId);
+  const userAverageRating = updateAverage(updatedSender.userRatings ?? []);
+
+  await UserModel.updateOne(
+    { _id: senderId },
+    { $set: { userAverageRating } }
+  );
+
+  await UserModel.updateOne(
+    { _id: senderId, "received_requests.requestId": requestId },
+    {
+      $set: {
+        "received_requests.$.userrating": {
+          value: ratingValue,
+          comment,
+          date: new Date(),
+        },
+        "received_requests.$.status": "rated",
+      },
+    }
+  );
+}
+
 
     return res.json({
       success: true,
@@ -140,6 +293,135 @@ const addRating = async (req, res) => {
   }
 };
 
+// const addRatingMobile = async (req, res) => {
+//   try {
+//     const { requestId, senderId, receiverId, ratingValue, comment } = req.body;
+
+//     if (!requestId || !senderId || !receiverId || !ratingValue) {
+//       return res.status(400).json({ message: "❌ Missing required fields" });
+//     }
+
+//     if (ratingValue < 1 || ratingValue > 10) {
+//       return res
+//         .status(400)
+//         .json({ message: "⚠️ Rating must be between 1 and 10" });
+//     }
+
+//     const sender = await UserModel.findById(senderId);
+//     const receiver = await UserModel.findById(receiverId);
+//     if (!sender || !receiver) {
+//       return res.status(404).json({ message: "❌ User not found" });
+//     }
+
+//     const objectIdRequestId = new mongoose.Types.ObjectId(requestId);
+
+//     // Check if request is completed
+//     const sentRequest = sender.sended_requests?.find(
+//       (req) =>
+//         req.requestId?.toString() === objectIdRequestId.toString() &&
+//         req.status === "completed"
+//     );
+//     const receivedRequest = sender.received_requests?.find(
+//       (req) =>
+//         req.requestId?.toString() === objectIdRequestId.toString() &&
+//         req.status === "completed"
+//     );
+
+//     if (!sentRequest && !receivedRequest) {
+//       return res
+//         .status(400)
+//         .json({ message: "⚠️ No completed request found for rating" });
+//     }
+
+//     // ✅ Sender is rating the receiver (Provider Rating)
+//     if (sentRequest) {
+//       await UserModel.updateOne(
+//         { _id: receiverId },
+//         {
+//           $push: {
+//             providerRatings: {
+//               rater: senderId,
+//               rating: ratingValue,
+//               comment,
+//               date: new Date(),
+//             },
+//           },
+//         }
+//       );
+
+//       const updatedReceiver = await UserModel.findById(receiverId);
+//       const providerAverageRating = updateAverage(
+//         updatedReceiver.providerRatings ?? []
+//       );
+
+//       await UserModel.updateOne(
+//         { _id: receiverId },
+//         { $set: { providerAverageRating } }
+//       );
+
+//       await UserModel.updateOne(
+//         { _id: senderId, "sended_requests.requestId": requestId },
+//         {
+//           $set: {
+//             "sended_requests.$.providerrating": {
+//               value: ratingValue,
+//               comment,
+//               date: new Date(),
+//             },
+//             "sended_requests.$.status": "rated",
+//           },
+//         }
+//       );
+//     }
+
+//     // ✅ Receiver is rating the sender (User Rating)
+//     if (receivedRequest) {
+//       await UserModel.updateOne(
+//         { _id: senderId },
+//         {
+//           $push: {
+//             userRatings: {
+//               rater: receiverId,
+//               rating: ratingValue,
+//               comment,
+//               date: new Date(),
+//             },
+//           },
+//         }
+//       );
+
+//       const updatedSender = await UserModel.findById(senderId);
+//       const userAverageRating = updateAverage(updatedSender.userRatings ?? []);
+
+//       await UserModel.updateOne(
+//         { _id: senderId },
+//         { $set: { userAverageRating } }
+//       );
+
+//       await UserModel.updateOne(
+//         { _id: senderId, "received_requests.requestId": requestId },
+//         {
+//           $set: {
+//             "received_requests.$.userrating": {
+//               value: ratingValue,
+//               comment,
+//               date: new Date(),
+//             },
+//             "received_requests.$.status": "rated",
+//           },
+//         }
+//       );
+//     }
+
+//     return res.json({
+//       success: true,
+//       message: "⭐ Rating submitted successfully!",
+//     });
+//   } catch (error) {
+//     console.error("❌ Error adding rating:", error);
+//     return res.status(500).json({ message: "🚨 Server error" });
+//   }
+// };
 const addRatingMobile = async (req, res) => {
   try {
     const { requestId, senderId, receiverId, ratingValue, comment } = req.body;
@@ -182,13 +464,33 @@ const addRatingMobile = async (req, res) => {
 
     // ✅ Sender is rating the receiver (Provider Rating)
     if (sentRequest) {
+      // await UserModel.updateOne(
+      //   { _id: receiverId },
+      //   {
+      //     $push: {
+      //       providerRatings: {
+      //         rater: senderId,
+      //         rating: ratingValue,
+      //         comment,
+      //         date: new Date(),
+      //       },
+      //     },
+      //     $set: {
+      //       "received_requests.$[elem].givenBysenderRating": {
+      //         value: ratingValue,
+      //         comment,
+      //         date: new Date(),
+      //       },
+      //     },
+      //   },
+      //   { arrayFilters: [{ "elem.requestId": objectIdRequestId }] }
+      // );
       await UserModel.updateOne(
-        { _id: receiverId },
+        { _id: receiverId, "received_requests.requestId": requestId },
         {
-          $push: {
-            providerRatings: {
-              rater: senderId,
-              rating: ratingValue,
+          $set: {
+            "received_requests.$.givenBysenderRating": {
+              value: ratingValue,
               comment,
               date: new Date(),
             },
@@ -234,14 +536,22 @@ const addRatingMobile = async (req, res) => {
               date: new Date(),
             },
           },
-        }
+          $set: {
+            "sended_requests.$[elem].givenByreceiverRating": {
+              value: ratingValue,
+              comment,
+              date: new Date(),
+            },
+          },
+        },
+        { arrayFilters: [{ "elem.requestId": objectIdRequestId }] }
       );
 
       const updatedSender = await UserModel.findById(senderId);
       const userAverageRating = updateAverage(updatedSender.userRatings ?? []);
 
       await UserModel.updateOne(
-        { _id: senderId },
+        { _id: senderId },                                                                                                                                                  
         { $set: { userAverageRating } }
       );
 
@@ -269,6 +579,7 @@ const addRatingMobile = async (req, res) => {
     return res.status(500).json({ message: "🚨 Server error" });
   }
 };
+
 
 const getUserRating = async (req, res) => {
   try {

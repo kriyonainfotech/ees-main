@@ -16,6 +16,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // **2MB file size limit**
 const RegisterAadhar = () => {
   const { user } = useContext(UserContext);
   const { fcmToken } = useContext(FCMContext);
+  const navigate = useNavigate();
 
   const [frontAadhar, setFrontAadhar] = useState(null);
   const [backAadhar, setBackAadhar] = useState(null);
@@ -32,7 +33,6 @@ const RegisterAadhar = () => {
 
   const location = useLocation();
   const previousData = location.state || {};
-  const navigate = useNavigate();
 
   const handleImageChange = (e, setImageState, setPreviewState) => {
     const file = e.target.files[0];
@@ -216,6 +216,12 @@ const RegisterAadhar = () => {
                   <div className="my-3 border-b text-center">
                     <div className="leading-none px-2 inline-block text-sm text-gray-600 tracking-wide font-medium bg-white transform translate-y-1/2"></div>
                   </div>
+                  <button
+                    onClick={() => navigate(-1)}
+                    className="btn absolute top-5 start-5 btn-primary"
+                  >
+                    Back
+                  </button>
                   <form onSubmit={handleSubmit}>
                     <div className="mx-auto max-w-full">
                       <h4 className="py-4 text-center">Aadhaar KYC</h4>

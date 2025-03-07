@@ -34,7 +34,7 @@ const getUsersByBCategory = async (req, res) => {
       paymentVerified: true,
       isAdminApproved: true,
     }).select(
-      "_id name email phone businessCategory profilePic address businessName userstatus userAverageRating userRatings providerRatings providerAverageRating received_requests sended_requests"
+      "_id name email phone businessCategory address profilePic address businessName userstatus userAverageRating userRatings providerRatings providerAverageRating received_requests sended_requests"
     );
 
     console.log("Users count:", users.length);
@@ -322,6 +322,28 @@ const resetekyc = async (req, res) => {
   }
 };
 
+const getUserCount = async (req, res) => {
+  try {
+    console.log("🔍 Fetching total user count...");
+
+    const userCount = await UserModel.countDocuments();
+
+    console.log(`✅ Total users: ${userCount}`);
+    return res.status(200).json({
+      success: true,
+      totalUsers: userCount,
+    });
+  } catch (error) {
+    console.error("🔥 Error in getUserCount:", error);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching user count",
+      error: error.message,
+    });
+  }
+};
+
+
 const updateProfilePic = async (req, res) => {
   try {
     const { profilePic, userId } = req.body;
@@ -481,6 +503,7 @@ module.exports = {
   updateUserAddressAndAadhar,
   resetekyc,
   updateProfilePic,
+  getUserCount,
   getPaymentVerifiedUser,
   fixedPaymentHistory,
   getPendingeKYCs,

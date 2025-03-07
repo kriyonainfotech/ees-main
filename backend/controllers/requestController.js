@@ -319,6 +319,7 @@ const getSentRequests = async (req, res) => {
         sended_requests: req.user?.sended_requests,
         status: req.status,
         date: req.date,
+        givenByreceiverRating:req.givenByreceiverRating,
         providerrating: req.providerrating,
       })) || [];
 
@@ -391,6 +392,7 @@ const getReceivedRequests = async (req, res) => {
         received_requests: req.user?.received_requests,
         status: req.status,
         date: req.date,
+        givenBysenderRating:req.givenBysenderRating,
         userrating: req.userrating,
       })) || [];
 

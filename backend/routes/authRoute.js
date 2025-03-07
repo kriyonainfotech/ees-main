@@ -37,6 +37,7 @@ const {
   fixedPaymentHistory,
   getPendingeKYCs,
   resetekyc,
+  getUserCount,
 } = require("../controllers/AuthController2");
 const router = express.Router();
 
@@ -132,10 +133,9 @@ router.get("/getUserById/:id", getUserById);
 router.get("/getUserMobile", getUserMobile);
 router.get("/logout", logout);
 router.put("/setUserStatus", verifyToken, setUserStatus);
-router.put("/setUserStatusMobile", setUserStatusMobile);
+router.post("/setUserStatusMobile", setUserStatusMobile);
 router.put("/updateRoleByEmail", updateRoleByEmail);
 router.post("/getUsersByBCategory", getUsersByBCategory);
-
 router.post("/reset-ekyc", resetekyc);
 
 // forgotpassword and reset password apis
@@ -150,5 +150,7 @@ router.put("/update-profile-pic", updateProfilePic);
 router.get("/paidusers", isAdmin, getPaymentVerifiedUser);
 router.get("/ekyc-pending", isAdmin, getPendingeKYCs);
 router.get("/fix-payment-history", fixedPaymentHistory);
+
+router.get("/getUserCount",getUserCount)
 
 module.exports = router;
