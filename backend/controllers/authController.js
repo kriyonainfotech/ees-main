@@ -17,6 +17,7 @@ const {
   distributeReferralRewards,
 } = require("../controllers/paymentController");
 const { sendNotification } = require("./sendController");
+const KYCModel = require("../model/kyc");
 
 const getPublicIdFromUrl = (url) => {
   const regex = /\/(?:v\d+\/)?([^\/]+)\/([^\/]+)\.[a-z]+$/;
@@ -1105,12 +1106,87 @@ const updateProfileMobile = async (req, res) => {
   }
 };
 
+// const deleteUser = async (req, res) => {
+//   try {
+//     const userId = req.body.id;
+
+//     // Fetch user before deletion
+//     const user = await UserModel.findById(userId);
+//     if (!user) {
+//       return res.status(404).send({
+//         success: false,
+//         message: "User not found",
+//       });
+//     }
+
+//     console.log(`[INFO] 🔄 Removing user-related data for user: ${userId}`);
+
+//     // Remove the user's requests from both users
+//     await UserModel.updateMany(
+//       { "sended_requests.user": userId },
+//       { $pull: { sended_requests: { user: userId } } }
+//     );
+
+//     await UserModel.updateMany(
+//       { "received_requests.user": userId },
+//       { $pull: { received_requests: { user: userId } } }
+//     );
+
+//     console.log("[INFO] ✅ Cleared all related requests");
+
+//     // Remove user ID from referrer's referral list if applicable
+//     if (user.referredBy) {
+//       await UserModel.updateOne(
+//         { _id: user.referredBy },
+//         { $pull: { referrals: userId } }
+//       );
+//       console.log("[INFO] ✅ Removed user from referrer’s referral list");
+//     }
+
+//     // Delete user's images from Cloudinary (Aadhar + Profile Pic)
+//     const cloudinary = require("cloudinary").v2;
+
+//     const deleteCloudinaryImage = async (imageUrl) => {
+//       if (imageUrl) {
+//         const publicId = imageUrl.split("/").pop().split(".")[0]; // Extract public ID
+//         await cloudinary.uploader.destroy(publicId);
+//       }
+//     };
+
+//     await deleteCloudinaryImage(user.profilePic);
+//     await deleteCloudinaryImage(user.frontAadhar);
+//     await deleteCloudinaryImage(user.backAadhar);
+
+//     console.log(
+//       "[INFO] ✅ Deleted user's profile and Aadhar images from Cloudinary"
+//     );
+
+//     // Finally, delete user
+//     await UserModel.findByIdAndDelete(userId);
+
+//     console.log("[SUCCESS] 🚀 User deleted successfully");
+
+//     return res.status(200).send({
+//       success: true,
+//       message: "User deleted successfully",
+//     });
+//   } catch (error) {
+//     console.error("[ERROR] ❌", error);
+//     return res.status(500).send({
+//       success: false,
+//       message: "An error occurred while deleting the user",
+//       error: error.message,
+//     });
+//   }
+// };
+const cloudinary = require("cloudinary").v2;
+
 const deleteUser = async (req, res) => {
   try {
     const userId = req.body.id;
 
     // Fetch user before deletion
-    const user = await UserModel.findById(userId);
+    const user = await UserModel.findById(userId).populate("ekyc"); // Populate KYC data
     if (!user) {
       return res.status(404).send({
         success: false,
@@ -1142,23 +1218,31 @@ const deleteUser = async (req, res) => {
       console.log("[INFO] ✅ Removed user from referrer’s referral list");
     }
 
-    // Delete user's images from Cloudinary (Aadhar + Profile Pic)
-    const cloudinary = require("cloudinary").v2;
-
+    // Function to delete Cloudinary images
     const deleteCloudinaryImage = async (imageUrl) => {
       if (imageUrl) {
-        const publicId = imageUrl.split("/").pop().split(".")[0]; // Extract public ID
+        const publicId = imageUrl.split("/").slice(-2).join("/").split(".")[0]; // Extract public ID
         await cloudinary.uploader.destroy(publicId);
       }
     };
 
-    await deleteCloudinaryImage(user.profilePic);
-    await deleteCloudinaryImage(user.frontAadhar);
-    await deleteCloudinaryImage(user.backAadhar);
+    // Delete user's personal images from Cloudinary
+    const userImages = [user.profilePic, user.frontAadhar, user.backAadhar];
 
-    console.log(
-      "[INFO] ✅ Deleted user's profile and Aadhar images from Cloudinary"
-    );
+    // Delete user's KYC images if they have eKYC
+    if (user.ekyc) {
+      console.log("[INFO] 🔍 User has eKYC, deleting KYC images...");
+      userImages.push(user.ekyc.panCardfront, user.ekyc.panCardback, user.ekyc.bankProof);
+
+      // Delete the KYC record
+      await KYCModel.findByIdAndDelete(user.ekyc._id);
+      console.log("[INFO] ✅ Deleted user's KYC record");
+    }
+
+    // Delete all collected images from Cloudinary
+    await Promise.all(userImages.map((image) => deleteCloudinaryImage(image)));
+
+    console.log("[INFO] ✅ Deleted all user's images from Cloudinary");
 
     // Finally, delete user
     await UserModel.findByIdAndDelete(userId);

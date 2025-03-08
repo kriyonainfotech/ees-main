@@ -25,6 +25,8 @@ import AadharUploadPage from "./adminPages/AadharUploadPage";
 import WithdrawalRequests from "./adminPages/WithdrawalRequests";
 import PaymentReport from "./adminPages/PaymentReport";
 import PendingeKYCs from "./adminPages/PendingeKYCs";
+import YearlyInvestors from "./Pages/YearlyInvestors";
+import MonthlyInvestors from "./Pages/MonthlyInvestors";
 
 // Lazy-loaded components
 const Login = lazy(() => import("./components/Login"));
@@ -225,6 +227,14 @@ export default function App() {
                       <PendingeKYCs />
                     </ProtectAdmin>
                   }
+                />
+                <Route
+                  path="/admin/investments/monthly"
+                  element={<MonthlyInvestors />}
+                />
+                <Route
+                  path="/admin/investments/yearly"
+                  element={<YearlyInvestors />}
                 />
               </Routes>
             </Router>

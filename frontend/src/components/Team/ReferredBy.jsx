@@ -29,7 +29,12 @@ const ReferredBy = () => {
         );
         console.log(response.data, "Referral Data");
 
-        setReferrals(response.data.referredUsers);
+        const sortedReferrals = response.data.referredUsers.sort((a, b) =>
+          a.name.localeCompare(b.name)
+        );
+
+        setReferrals(sortedReferrals);
+
         setReferralCounts(response.data.referralCounts); // Get direct & total referral count
         setLoadingReferrals(false);
         setFilteredReferrals(response.data.referredUsers); // Initially show all referrals

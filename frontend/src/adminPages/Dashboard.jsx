@@ -4,7 +4,10 @@ import AdminSidebar from "../admincomponents/AdminSidebar";
 import UserCount from "../admincomponents/dashboardCpmponent/UserCount";
 import axios from "axios";
 import PandingCount from "../admincomponents/dashboardCpmponent/PandingCount";
-import AdminCount from "../admincomponents/dashboardCpmponent/AdminCount";
+import {
+  AdminCount,
+  Investments,
+} from "../admincomponents/dashboardCpmponent/AdminCount";
 import AssignReferal from "../admincomponents/dashboardCpmponent/AssignReferal";
 import { FaUserCheck } from "react-icons/fa";
 import { Link } from "react-router-dom";
@@ -70,6 +73,9 @@ const Dashboard = () => {
                 <h3 className="">Dashboard</h3>
               </div>
               <div className="col-12 d-flex flex-wrap pt-3">
+                <div className="col-12 p-1">
+                  <Investments label="Investments" />
+                </div>
                 <div className="col-12 col-md-6 col-lg-4 p-1">
                   <PandingCount
                     pandingcnt={pandingcnt}
