@@ -12,6 +12,9 @@ const razorpayInstance = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+console.log("[INFO] Razorpay Key ID:", process.env.RAZORPAY_KEY_ID);
+console.log("[INFO] Razorpay Key Secret:", process.env.RAZORPAY_KEY_SECRET);
+
 const CreateOrder = async (req, res) => {
   try {
     const { amount } = req.body;
@@ -50,9 +53,11 @@ const CreateOrder = async (req, res) => {
         reminder_enable: true,
       };
 
-      const paymentLink = await razorpayInstance.paymentLink.create(
-        paymentLinkRequest
-      );
+      // const paymentLink = await razorpayInstance.paymentLink.create(
+      //   paymentLinkRequest
+      // );
+      const paymentLink = await razorpayInstance.paymentLink.create(paymentLinkRequest);
+
       console.log("[INFO] Payment link created:", paymentLink);
 
       res.status(200).json({
@@ -206,7 +211,7 @@ const distributeReferralRewards = async (newUserId, referrerId) => {
 //   }
 // };
 
-const verifyPayment = async (req, res) => {
+const verifyPayment = async (req, res) => { 
   try {
     const { payment_id, user_id } = req.body;
     if (!payment_id || !user_id) {
@@ -217,26 +222,49 @@ const verifyPayment = async (req, res) => {
     }
 
     const paymentDetails = await razorpayInstance.payments.fetch(payment_id);
-    if (
-      !paymentDetails ||
-      (paymentDetails.status !== "authorized" &&
-        paymentDetails.status !== "captured")
-    ) {
+
+
+    // 🔹 If payment is authorized but not captured, capture it
+    if (paymentDetails.status === "authorized") {
+      console.log("[INFO] Payment authorized, capturing...");
+      await razorpayInstance.payments.capture(payment_id, paymentDetails.amount);
+    }
+
+    // Fetch updated payment details after capturing
+    const updatedPayment = await razorpayInstance.payments.fetch(payment_id);
+
+     // 🔴 If payment is still not captured, return error
+    if (updatedPayment.status !== "captured") {
       return res.status(400).json({
         success: false,
-        message: "Payment failed or not yet captured",
+        message: "Payment capture failed, please try again",
       });
     }
 
-    if (paymentDetails.status === "authorized") {
-      await razorpayInstance.payments.capture(
-        payment_id,
-        paymentDetails.amount
-      );
-    }
-
+     // 🔹 Payment is now verified, update user & distribute rewards
     const expiryDate = new Date();
     expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+
+    // if (
+    //   !paymentDetails ||
+    //   (paymentDetails.status !== "authorized" &&
+    //     paymentDetails.status !== "captured")
+    // ) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Payment failed or not yet captured",
+    //   });
+    // }
+
+    // if (paymentDetails.status === "authorized") {
+    //   await razorpayInstance.payments.capture(
+    //     payment_id,
+    //     paymentDetails.amount
+    //   );
+    // }
+
+    // const expiryDate = new Date();
+    // expiryDate.setFullYear(expiryDate.getFullYear() + 1);
 
     const updatedUser = await UserModel.findByIdAndUpdate(
       user_id,
