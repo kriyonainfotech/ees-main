@@ -21,7 +21,7 @@ const corsOptions = {
     "https://ess-frontend-git-master-kriyona-infotechs-projects.vercel.app",
     "https://ees121.com",
     "https://www.ees121.com",
-    "http://localhost:5173",
+    "http://localhost:5174",
   ],
   allowedHeaders: ["Content-Type", "Authorization"],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],

@@ -23,6 +23,9 @@ const UserDetailsModal = ({ user, onClose, onApprove, setSelectedUser }) => {
   const [loading, setLoading] = useState(false);
   const [profilePic, setProfilePic] = useState(user.profilePic);
   const [userId, setUserId] = useState(user._id);
+  const paymentHistory = user?.paymentHistory || [];
+  const paymentStatus =
+    paymentHistory.length > 0 ? paymentHistory[0]?.status : "N/A";
 
   const aadharImages = [user.frontAadhar, user.backAadhar];
 
@@ -97,8 +100,8 @@ const UserDetailsModal = ({ user, onClose, onApprove, setSelectedUser }) => {
   const handleReseteKYC = () => {
     toast.info(
       <div>
-        Are you sure you want to reset eKYC? This action will permanently remove all KYC related data.
-
+        Are you sure you want to reset eKYC? This action will permanently remove
+        all KYC related data.
         <div className="flex gap-4 mt-2">
           <button
             className="bg-red-600 text-white px-3 py-1 rounded-md"
@@ -128,7 +131,12 @@ const UserDetailsModal = ({ user, onClose, onApprove, setSelectedUser }) => {
 
       if (response.status === 200) {
         toast.success(response?.data?.message);
-        const updatedUser = { ...user, ekyc: null, frontAadhar: null, backAadhar: null };
+        const updatedUser = {
+          ...user,
+          ekyc: null,
+          frontAadhar: null,
+          backAadhar: null,
+        };
         setSelectedUser(updatedUser);
         onClose(); // Close modal after successful deletion
       }
@@ -141,7 +149,6 @@ const UserDetailsModal = ({ user, onClose, onApprove, setSelectedUser }) => {
       setLoading(false);
     }
   };
-
 
   const updateProfilePic = async () => {
     try {
@@ -177,6 +184,19 @@ const UserDetailsModal = ({ user, onClose, onApprove, setSelectedUser }) => {
   const resetProfilePic = () => {
     setProfilePic(user.profilePic); // Reset to original
     toast.info("Profile picture reset.");
+  };
+
+  const capturePayment = async (paymentId) => {
+    try {
+      const res = await axios.post(`${backend_API}/payment/capture-payment`, {
+        paymentId,
+        userId,
+      });
+      console.log(res, "data");
+      alert(res.data.message);
+    } catch (error) {
+      alert("Error capturing payment");
+    }
   };
 
   return (
@@ -233,6 +253,41 @@ const UserDetailsModal = ({ user, onClose, onApprove, setSelectedUser }) => {
                   {user.phone}
                 </td>
               </tr>
+              <tr>
+                <td className="border border-gray-300 px-4 py-2 font-semibold">
+                  Payment Status
+                </td>
+                <td className="border border-gray-300 px-4 py-2 font-semibold text-blue-600">
+                  <p>{paymentStatus || "N/A"}</p>
+                  {paymentStatus === "authorized" && (
+                    <div className="flex gap-2 align-items-center">
+                      <button
+                        onClick={() =>
+                          capturePayment(paymentHistory[0]?.paymentId)
+                        }
+                        className="bg-green-500 text-white px-3 py-1 rounded"
+                      >
+                        Capture Payment
+                      </button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+              {/* {paymentStatus === "authorized" && (
+                <tr>
+                  <td
+                    colSpan="2"
+                    className="border border-gray-300 px-4 py-2 text-center"
+                  >
+                    <button
+                      onClick={capturePayment}
+                      className="bg-green-500 text-white px-3 py-1 rounded"
+                    >
+                      Capture Payment
+                    </button>
+                  </td>
+                </tr>
+              )} */}
               <tr>
                 <td className="border border-gray-300 px-4 py-2 font-semibold">
                   Address
@@ -308,7 +363,7 @@ const UserDetailsModal = ({ user, onClose, onApprove, setSelectedUser }) => {
                   Permanent Address
                 </td>
                 <td className="border border-gray-300 px-4 py-2">
-                  {permanentAddress ? permanentAddress : 'N/A'}
+                  {permanentAddress ? permanentAddress : "N/A"}
                 </td>
               </tr>
               <tr>
@@ -316,7 +371,7 @@ const UserDetailsModal = ({ user, onClose, onApprove, setSelectedUser }) => {
                   Aadhar Number
                 </td>
                 <td className="border border-gray-300 px-4 py-2">
-                  {aadharNumber ? aadharNumber : 'N/A'}
+                  {aadharNumber ? aadharNumber : "N/A"}
                 </td>
               </tr>
               <tr>
@@ -589,7 +644,7 @@ const AllUsers = () => {
       console.error("Error fetching referred user:", error.message);
       toast(
         error?.response?.data?.message ||
-        "Failed to fetch referred user details"
+          "Failed to fetch referred user details"
       );
     }
   };
@@ -647,9 +702,13 @@ const AllUsers = () => {
                     {filteredUsers.reverse().map((user, index) => (
                       <tr key={user._id}>
                         <th>{index + 1}</th>
-                        <td className="text-sm">{new Date(user.createdAt).toLocaleString()}</td>
+                        <td className="text-sm">
+                          {new Date(user.createdAt).toLocaleString()}
+                        </td>
                         <td className="text-sm">{user.name}</td>
-                        <td className="text-sm capitalize">{user.businessCategory[0]}</td>
+                        <td className="text-sm capitalize">
+                          {user.businessCategory[0]}
+                        </td>
                         {/* <td className="text-sm">{user.email}</td> */}
                         <td className="text-sm">{user.phone}</td>
                         <td className="text-sm">{`${user?.address?.area}, ${user?.address?.city}, ${user?.address?.state}, ${user?.address?.country}, ${user?.address?.pincode}`}</td>
@@ -679,11 +738,14 @@ const AllUsers = () => {
                         </td>
                         <td className="text-sm">
                           {user.paymentVerified ? (
-                            <button className="btn btn-success btn-sm">
-                              <span className="text-white flex items-center gap-2">
-                                Payment <SiTicktick />
-                              </span>
-                            </button>
+                            <>
+                              <button className="btn btn-success btn-sm">
+                                <span className="text-white flex items-center gap-2">
+                                  Payment <SiTicktick />
+                                </span>
+                              </button>
+                              <button></button>
+                            </>
                           ) : (
                             <button className="btn btn-danger btn-sm">
                               <span className="text-white flex items-center gap-2">
