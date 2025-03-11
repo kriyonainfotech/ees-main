@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import AdminHeader from "../admincomponents/AdminHeader";
 import AdminSidebar from "../admincomponents/AdminSidebar";
+import { toast } from "react-toastify";
 
 const backend_API = import.meta.env.VITE_API_URL;
 
@@ -10,10 +11,10 @@ const YearlyInvestors = () => {
   const [investors, setInvestors] = useState([]);
   const [plans, setPlans] = useState([]);
   const [phone, setPhone] = useState("");
- const [selectedPlan, setSelectedPlan] = useState("");
- const [isModalOpen, setIsModalOpen] = useState(false);
- const [searchTerm, setSearchTerm] = useState("");
- const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     fetchYearlyInvestors();
@@ -40,28 +41,32 @@ const YearlyInvestors = () => {
 
   const fetchPlans = async () => {
     try {
-      const response = await axios.get(`${backend_API}/invest/plans/monthly`);
+      const response = await axios.get(`${backend_API}/invest/plans/yearly`);
       console.log(response.data);
       setPlans(response.data.plans);
     } catch (error) {
       console.error("Error fetching plans:", error);
     }
   };
-
   const handleAssignPlan = async () => {
     if (!phone || !selectedPlan) return alert("Please fill all fields!");
+
+    console.log("Sending request to assign plan:", { phone, selectedPlan }); // Debug log
 
     try {
       const response = await axios.post(`${backend_API}/invest/assign-plan`, {
         phone,
         planId: selectedPlan,
       });
-      console.log(response.data,'reponse+_=-=-=-');
+
+      console.log("Response received:", response); // Check if the response is received
       if (response.data.success) {
         alert("Plan assigned successfully!");
+        fetchYearlyInvestors();
       } else {
-        alert("Failed to assign plan.");
+        toast.error(response?.data?.message || "Failed to assign plan.");
       }
+
       setIsModalOpen(false);
       fetchYearlyInvestors(); // Refresh the list
     } catch (error) {
@@ -79,13 +84,13 @@ const YearlyInvestors = () => {
           {/* Header with Assign Investment Button */}
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-semibold text-gray-800">
-              Yearly Investors
+              Fixed Deposit Investors
             </h2>
             <button
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 float-right"
               onClick={() => setIsModalOpen(true)}
             >
-              Assign Investment Plan
+              Assign Fixed Deposit
             </button>
           </div>
 
@@ -158,7 +163,7 @@ const YearlyInvestors = () => {
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div className="bg-white p-6 rounded-lg shadow-lg w-[400px]">
               <h2 className="text-xl font-semibold mb-4">
-                Assign Investment Plan
+                Assign Fixed Deposit
               </h2>
 
               {/* Phone Number Input */}
@@ -179,14 +184,11 @@ const YearlyInvestors = () => {
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 >
                   {selectedPlan
-                    ? plans
-                        .find((plan) => plan._id === selectedPlan)
-                        ?.type.toUpperCase() +
-                      " - " +
-                      plans.find((plan) => plan._id === selectedPlan)
-                        ?.investmentAmount +
-                      " ₹"
-                    : "Choose a Plan"}
+                    ? `₹${
+                        plans.find((plan) => plan._id === selectedPlan)
+                          ?.investmentAmount
+                      }/-`
+                    : "Choose Fixed Deposit"}
                 </div>
 
                 {isDropdownOpen && (
@@ -195,7 +197,7 @@ const YearlyInvestors = () => {
                     <input
                       type="text"
                       className="border-b w-full p-2"
-                      placeholder="Search Plan..."
+                      placeholder="Search Fixed Deposit..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -215,8 +217,7 @@ const YearlyInvestors = () => {
                               setIsDropdownOpen(false);
                             }}
                           >
-                            {plan.type.toUpperCase()} - {plan.investmentAmount}{" "}
-                            ₹
+                            ₹{plan.investmentAmount} /-
                           </li>
                         ))}
                     </ul>

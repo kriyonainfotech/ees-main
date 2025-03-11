@@ -28,6 +28,7 @@ const createPlan = async (req, res) => {
     res.status(500).json({ success: false, message: "Server Error", error });
   }
 };
+
 const getMonthlyPlans = async (req, res) => {
   try {
     const monthlyPlans = await InvestmentPlan.find({ type: "monthly" });
@@ -48,53 +49,62 @@ const getYearlyPlans = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: "Server Error", error });
   }
+};
 
-};const assignInvestmentPlan = async (req, res) => {
+const assignInvestmentPlan = async (req, res) => {
   try {
+    console.log("Received request with body:", req.body);
+
     const { phone, planId } = req.body;
 
     if (!phone || !planId) {
-      return res.status(400).json({ success: false, message: "Phone and Plan ID are required" });
+      console.log("Validation failed: Missing phone or planId");
+      return res
+        .status(400)
+        .json({ success: false, message: "Phone and Plan ID are required" });
     }
 
-    // Find User by Phone
     const user = await User.findOne({ phone });
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      console.log(`User not found for phone: ${phone}`);
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
-    // Find Investment Plan by ID
     const plan = await InvestmentPlan.findById(planId);
     if (!plan) {
-      return res.status(404).json({ success: false, message: "Investment Plan not found" });
+      console.log(`Investment Plan not found for planId: ${planId}`);
+      return res
+        .status(404)
+        .json({ success: false, message: "Investment Plan not found" });
     }
 
-    // Convert Yearly Duration to Months
-    const durationInMonths = plan.type === "yearly" ? plan.duration * 12 : plan.duration;
+    console.log("Assigning plan to user:", user._id);
 
-    // Calculate next payout date based on plan type
+    // Calculate payout
     const nextPayoutDate = new Date();
-    if (plan.type === "yearly") {
-      nextPayoutDate.setFullYear(nextPayoutDate.getFullYear() + 1);
-    } else {
-      nextPayoutDate.setMonth(nextPayoutDate.getMonth() + 1);
-    }
+    nextPayoutDate.setMonth(nextPayoutDate.getMonth() + 1);
 
-    // Create User Investment
     const newInvestment = new UserInvestment({
       userId: user._id,
       planId: plan._id,
       amount: plan.investmentAmount,
       startDate: new Date(),
       nextPayoutDate,
-      status: "active"
+      status: "active",
     });
 
     await newInvestment.save();
+    console.log("Investment Plan Assigned Successfully:", newInvestment);
 
-    res.status(201).json({ success: true, message: "Investment Plan Assigned", investment: newInvestment });
+    res.status(201).json({
+      success: true,
+      message: "Investment Plan Assigned",
+      investment: newInvestment,
+    });
   } catch (error) {
-    console.log(error,'error in assignInvestmentPlan')
+    console.error("Error in assignInvestmentPlan:", error);
     res.status(500).json({ success: false, message: "Server Error", error });
   }
 };
@@ -109,16 +119,20 @@ const getYearlyInvestors = async (req, res) => {
 
     if (!yearlyPlans.length) {
       console.log("⚠️ No yearly plans found!");
-      return res.status(404).json({ success: false, message: "No yearly plans found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "No yearly plans found" });
     }
 
     // Extract yearly plan IDs
-    const yearlyPlanIds = yearlyPlans.map(plan => plan._id);
+    const yearlyPlanIds = yearlyPlans.map((plan) => plan._id);
     console.log("🔍 Yearly Plan IDs:", yearlyPlanIds);
 
     // Fetch user investments linked to yearly plans
     console.log("📢 Fetching user investments linked to yearly plans...");
-    const investments = await UserInvestment.find({ planId: { $in: yearlyPlanIds } })
+    const investments = await UserInvestment.find({
+      planId: { $in: yearlyPlanIds },
+    })
       .populate("userId", "name phone")
       .populate("planId", "investmentAmount returnAmount duration");
 
@@ -150,6 +164,7 @@ const getYearlyInvestors = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 const getMonthlyInvestors = async (req, res) => {
   try {
     console.log("📢 Fetching monthly investment plans...");
@@ -160,16 +175,20 @@ const getMonthlyInvestors = async (req, res) => {
 
     if (!monthlyPlans.length) {
       console.log("⚠️ No monthly plans found!");
-      return res.status(404).json({ success: false, message: "No monthly plans found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "No monthly plans found" });
     }
 
     // Extract monthly plan IDs
-    const monthlyPlanIds = monthlyPlans.map(plan => plan._id);
+    const monthlyPlanIds = monthlyPlans.map((plan) => plan._id);
     console.log("🔍 monthly Plan IDs:", monthlyPlanIds);
 
     // Fetch user investments linked to monthly plans
     console.log("📢 Fetching user investments linked to monthly plans...");
-    const investments = await UserInvestment.find({ planId: { $in: monthlyPlanIds } })
+    const investments = await UserInvestment.find({
+      planId: { $in: monthlyPlanIds },
+    })
       .populate("userId", "name phone")
       .populate("planId", "investmentAmount returnAmount duration");
 
@@ -201,7 +220,5 @@ const getMonthlyInvestors = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
-
 
 module.exports = { createPlan ,getMonthlyPlans, getYearlyPlans ,assignInvestmentPlan , getYearlyInvestors,getMonthlyInvestors};

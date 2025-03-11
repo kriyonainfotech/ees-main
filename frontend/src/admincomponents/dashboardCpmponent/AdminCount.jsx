@@ -48,13 +48,13 @@ const Investments = () => {
               to="/admin/investments/yearly"
               className="bg-blue-500 text-white px-6 py-3 rounded-lg text-center flex-1"
             >
-              Yearly Investors
+              Fixed Deposit
             </Link>
             <Link
               to="/admin/investments/monthly"
               className="bg-green-500 text-white px-6 py-3 rounded-lg text-center flex-1"
             >
-              Monthly Investors
+              Monthly Income
             </Link>
           </div>
         </div>

@@ -79,13 +79,13 @@ const MonthlyInvestors = () => {
           {/* Header with Assign Investment Button */}
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-semibold text-gray-800">
-              Monthly Investors
+              Monthly Income Investors
             </h2>
             <button
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 float-right"
               onClick={() => setIsModalOpen(true)}
             >
-              Assign Investment Plan
+              Assign Monthly Income Plan
             </button>
           </div>
 
@@ -179,14 +179,11 @@ const MonthlyInvestors = () => {
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 >
                   {selectedPlan
-                    ? plans
-                        .find((plan) => plan._id === selectedPlan)
-                        ?.type.toUpperCase() +
-                      " - " +
-                      plans.find((plan) => plan._id === selectedPlan)
-                        ?.investmentAmount +
-                      " ₹"
-                    : "Choose a Plan"}
+                    ? `₹${
+                        plans.find((plan) => plan._id === selectedPlan)
+                          ?.investmentAmount
+                      }/-`
+                    : "Monthly Income "}
                 </div>
 
                 {isDropdownOpen && (
@@ -195,7 +192,7 @@ const MonthlyInvestors = () => {
                     <input
                       type="text"
                       className="border-b w-full p-2"
-                      placeholder="Search Plan..."
+                      placeholder="Search Monthly Income ..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -215,8 +212,7 @@ const MonthlyInvestors = () => {
                               setIsDropdownOpen(false);
                             }}
                           >
-                            {plan.type.toUpperCase()} - {plan.investmentAmount}{" "}
-                            ₹
+                            ₹ {plan.investmentAmount} /-
                           </li>
                         ))}
                     </ul>
