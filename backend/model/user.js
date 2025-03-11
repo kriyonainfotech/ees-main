@@ -153,7 +153,7 @@ const userSchema = new mongoose.Schema(
           comment: { type: String, default: null },
           date: { type: Date, default: Date.now },
         },
-         givenBysenderRating: {
+        givenBysenderRating: {
           value: { type: Number, min: 1, max: 10, default: null },
           comment: { type: String, default: null },
           date: { type: Date, default: Date.now },
@@ -235,12 +235,17 @@ const userSchema = new mongoose.Schema(
     ],
     paymentHistory: [
       {
-        paymentId: String, // Razorpay Payment ID
-        orderId: String, // Razorpay Order ID or Payment Link ID
-        amount: Number, // Amount paid
-        currency: String, // Currency of the transaction
-        status: String, // Payment status (e.g., "paid", "failed")
-        createdAt: { type: Date, default: Date.now },
+        orderId: String,
+        paymentId: String,
+        amount: Number,
+        currency: String,
+        status: {
+          type: String,
+          enum: ["created", "authorized", "captured", "failed"],
+        },
+        createdAt: Date,
+        updatedAt: Date,
+        paymentLink: String,
       },
     ],
     withdrawalHistory: [

@@ -98,6 +98,7 @@ const Home = () => {
         {
           amount: "121",
           currency: "INR",
+          user_id: userId,
         }
       );
 
