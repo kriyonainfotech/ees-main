@@ -105,7 +105,7 @@ const YearlyInvestors = () => {
                   <th className="border p-3 text-center">Investment Amount</th>
                   <th className="border p-3 text-center">Return Amount</th>
                   <th className="border p-3 text-center">Start Date</th>
-                  <th className="border p-3 text-center">Next Payout Date</th>
+                  <th className="border p-3 text-center">Withdraw Date</th>
                   <th className="border p-3 text-center">Duration</th>
                   <th className="border p-3 text-center">Status</th>
                 </tr>

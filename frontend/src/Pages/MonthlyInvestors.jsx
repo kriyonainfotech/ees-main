@@ -98,9 +98,9 @@ const MonthlyInvestors = () => {
                   <th className="border p-3 text-center">Investor Name</th>
                   <th className="border p-3 text-center">Phone</th>
                   <th className="border p-3 text-center">Investment Amount</th>
-                  <th className="border p-3 text-center">Return Amount</th>
+                  <th className="border p-3 text-center">Monthly Income</th>
                   <th className="border p-3 text-center">Start Date</th>
-                  <th className="border p-3 text-center">Next Payout Date</th>
+                  <th className="border p-3 text-center">Withdraw Date</th>
                   <th className="border p-3 text-center">Duration</th>
                   <th className="border p-3 text-center">Status</th>
                 </tr>
@@ -122,8 +122,8 @@ const MonthlyInvestors = () => {
                       </td>
                       <td className="border p-3">
                         {investor.duration >= 12
-                          ? `${investor.duration / 12} Years`
-                          : `${investor.duration} Months`}
+                          ? `${investor.duration / 12} Year`
+                          : `${investor.duration} Years`}
                       </td>
 
                       <td className="border p-3">
