@@ -433,6 +433,7 @@ const resetUserImages = async (req, res) => {
           profilePic: "",
           frontAadhar: "",
           backAadhar: "",
+          ekyc: null,
         },
       }
     );

@@ -3,6 +3,7 @@ const KYC = require("../model/kyc");
 const UserModel = require("../model/user");
 const Razorpay = require("razorpay");
 const axios = require("axios");
+const { uploadToS3 } = require("../services/ekycService"); // utility that compress + uploads to S3
 
 const razorpayInstance = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -15,69 +16,70 @@ const addekyc = async (req, res) => {
     const { bankAccountNumber, accountHolderName, ifscCode, upiId, amount } =
       req.body;
 
-    console.log("🛠️ Processing withdrawal request for user:", userId);
+    console.log("🛠️ adding ekyc for user:", userId);
 
-    // Extract files from request
-    const panCardfront = req.files?.panCardfront?.[0]?.path; // File URL
-    const panCardback = req.files?.panCardback?.[0]?.path; // File URL
-    const bankProof = req.files?.bankProof?.[0]?.path; // File URL
-    const frontAadhar = req.files?.frontAadhar?.[0]?.path;
-    const backAadhar = req.files?.backAadhar?.[0]?.path;
+    const files = req.files;
 
-    console.log("📂 Uploaded files:");
-    console.log("➡️ PAN Front:", panCardfront);
-    console.log("➡️ PAN Back:", panCardback);
-    console.log("➡️ Bank Proof:", bankProof);
-    console.log("➡️ Aadhar Front:", frontAadhar);
-    console.log("➡️ Aadhar Back:", backAadhar);
+    const getFileUrl = async (fieldName) => {
+      if (files?.[fieldName]?.[0]) {
+        const file = files[fieldName][0];
+        return await uploadToS3(file.buffer, file.originalname, "ekyc");
+      }
+      return null;
+    };
 
+    // Upload all files to S3
+    const panCardfront = await getFileUrl("panCardfront");
+    const panCardback = await getFileUrl("panCardback");
+    const bankProof = await getFileUrl("bankProof");
+    const frontAadhar = await getFileUrl("frontAadhar");
+    const backAadhar = await getFileUrl("backAadhar");
+
+    console.log("📂 Uploaded files:", {
+      panCardfront,
+      panCardback,
+      bankProof,
+      frontAadhar,
+      backAadhar,
+    });
+
+    // Validations
     if (!panCardfront || !panCardback || !bankProof) {
-      console.log("❌ Missing required files!");
       return res.status(400).json({
         message: "Both panCardfront, panCardback and bankProof are required.",
       });
     }
 
-    // Ensure either UPI ID or bank details are provided
     if (!upiId && (!bankAccountNumber || !ifscCode || !accountHolderName)) {
-      console.log("❌ Missing payment details!");
       return res
         .status(400)
         .json({ message: "Either UPI ID or bank details must be provided." });
     }
 
-    if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifscCode)) {
+    if (ifscCode && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifscCode)) {
       return res.status(400).json({
         success: false,
         message: "Invalid IFSC code. It must be 11 characters long.",
       });
     }
 
-    // if (amount < 120) {
-    //   return res
-    //     .status(400)
-    //     .json({ message: "Minimum withdrawal amount is ₹120." });
-    // }
-
-    // Check if KYC already exists for the user
-    let existingKYC = await KYC.findOne({ userId });
+    // Check for existing KYC
+    const existingKYC = await KYC.findOne({ userId });
     if (existingKYC) {
-      console.log("❌ KYC already exists for this user!");
       return res
         .status(400)
         .json({ message: "KYC details already submitted." });
     }
 
-    // Save new KYC details with withdrawal amount
-    console.log("🛠️ Creating new KYC document...");
+    // Create new KYC document
     const newKYC = new KYC({
       userId,
       bankAccountNumber: bankAccountNumber || null,
       accountHolderName: accountHolderName || null,
       ifscCode: ifscCode || null,
       upiId: upiId || null,
-      panCardback,
       panCardfront,
+      panCardback,
       bankProof,
       amount,
     });
@@ -85,28 +87,17 @@ const addekyc = async (req, res) => {
     await newKYC.save();
     console.log("✅ New KYC saved with ID:", newKYC._id);
 
-    // Fetch user document
-    let user = await UserModel.findById(userId);
-    if (!user) {
-      console.log("❌ User not found!");
-      return res.status(404).json({ message: "User not found." });
-    }
+    // Update user with ekyc and aadhar images
+    const user = await UserModel.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found." });
 
-    // Check if ekyc field exists in UserModel, if not, add it
-    if (!user.ekyc) {
-      console.log("🛠️ Adding ekyc field to user...");
-      await UserModel.findByIdAndUpdate(userId, { ekyc: newKYC._id });
-      console.log("✅ ekyc field added and linked to KYC ID:", newKYC._id);
-    } else {
-      console.log("✅ ekyc field already exists in user document.");
-    }
-
-    // Update Aadhar photos in UserModel
     await UserModel.findByIdAndUpdate(userId, {
+      ...(user.ekyc ? {} : { ekyc: newKYC._id }),
       frontAadhar: frontAadhar || user.frontAadhar,
       backAadhar: backAadhar || user.backAadhar,
     });
-    console.log("✅ Aadhar photos updated in UserModel");
+
+    console.log("✅ User updated with ekyc and Aadhar images");
 
     res.status(201).send({
       message: "Withdrawal request submitted successfully.",
@@ -118,6 +109,114 @@ const addekyc = async (req, res) => {
   }
 };
 
+// const addekyc = async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+//     const { bankAccountNumber, accountHolderName, ifscCode, upiId, amount } =
+//       req.body;
+
+//     console.log("🛠️ Processing withdrawal request for user:", userId);
+
+//     // Extract files from request
+//     const panCardfront = req.files?.panCardfront?.[0]?.path; // File URL
+//     const panCardback = req.files?.panCardback?.[0]?.path; // File URL
+//     const bankProof = req.files?.bankProof?.[0]?.path; // File URL
+//     const frontAadhar = req.files?.frontAadhar?.[0]?.path;
+//     const backAadhar = req.files?.backAadhar?.[0]?.path;
+
+//     console.log("📂 Uploaded files:");
+//     console.log("➡️ PAN Front:", panCardfront);
+//     console.log("➡️ PAN Back:", panCardback);
+//     console.log("➡️ Bank Proof:", bankProof);
+//     console.log("➡️ Aadhar Front:", frontAadhar);
+//     console.log("➡️ Aadhar Back:", backAadhar);
+
+//     if (!panCardfront || !panCardback || !bankProof) {
+//       console.log("❌ Missing required files!");
+//       return res.status(400).json({
+//         message: "Both panCardfront, panCardback and bankProof are required.",
+//       });
+//     }
+
+//     // Ensure either UPI ID or bank details are provided
+//     if (!upiId && (!bankAccountNumber || !ifscCode || !accountHolderName)) {
+//       console.log("❌ Missing payment details!");
+//       return res
+//         .status(400)
+//         .json({ message: "Either UPI ID or bank details must be provided." });
+//     }
+
+//     if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifscCode)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid IFSC code. It must be 11 characters long.",
+//       });
+//     }
+
+//     // if (amount < 120) {
+//     //   return res
+//     //     .status(400)
+//     //     .json({ message: "Minimum withdrawal amount is ₹120." });
+//     // }
+
+//     // Check if KYC already exists for the user
+//     let existingKYC = await KYC.findOne({ userId });
+//     if (existingKYC) {
+//       console.log("❌ KYC already exists for this user!");
+//       return res
+//         .status(400)
+//         .json({ message: "KYC details already submitted." });
+//     }
+
+//     // Save new KYC details with withdrawal amount
+//     console.log("🛠️ Creating new KYC document...");
+//     const newKYC = new KYC({
+//       userId,
+//       bankAccountNumber: bankAccountNumber || null,
+//       accountHolderName: accountHolderName || null,
+//       ifscCode: ifscCode || null,
+//       upiId: upiId || null,
+//       panCardback,
+//       panCardfront,
+//       bankProof,
+//       amount,
+//     });
+
+//     await newKYC.save();
+//     console.log("✅ New KYC saved with ID:", newKYC._id);
+
+//     // Fetch user document
+//     let user = await UserModel.findById(userId);
+//     if (!user) {
+//       console.log("❌ User not found!");
+//       return res.status(404).json({ message: "User not found." });
+//     }
+
+//     // Check if ekyc field exists in UserModel, if not, add it
+//     if (!user.ekyc) {
+//       console.log("🛠️ Adding ekyc field to user...");
+//       await UserModel.findByIdAndUpdate(userId, { ekyc: newKYC._id });
+//       console.log("✅ ekyc field added and linked to KYC ID:", newKYC._id);
+//     } else {
+//       console.log("✅ ekyc field already exists in user document.");
+//     }
+
+//     // Update Aadhar photos in UserModel
+//     await UserModel.findByIdAndUpdate(userId, {
+//       frontAadhar: frontAadhar || user.frontAadhar,
+//       backAadhar: backAadhar || user.backAadhar,
+//     });
+//     console.log("✅ Aadhar photos updated in UserModel");
+
+//     res.status(201).send({
+//       message: "Withdrawal request submitted successfully.",
+//       kyc: newKYC,
+//     });
+//   } catch (error) {
+//     console.log("❌ Server Error:", error);
+//     res.status(500).json({ message: "Server error. Try again later." });
+//   }
+// };
 
 const submitWithdrawalRequest = async (req, res) => {
   try {
@@ -488,187 +587,6 @@ const approveBankWithdrawal = async (req, res) => {
     });
   }
 };
-
-// const approveBankWithdrawal = async (req, res) => {
-//   try {
-//     const { kycId, amount } = req.body;
-//     console.log("🔄 Initiating Bank Withdrawal...");
-
-//     // Fetch KYC
-//     const kyc = await KYC.findById(kycId).populate("userId");
-//     if (!kyc)
-//       return res
-//         .status(404)
-//         .json({ success: false, message: "KYC record not found." });
-
-//     if (!kyc.verified)
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "KYC is not verified yet." });
-
-//     // RazorpayX API Credentials
-//     const RAZORPAYX_KEY = process.env.RAZORPAY_KEY_ID;
-//     const RAZORPAYX_SECRET = process.env.RAZORPAY_KEY_SECRET;
-//     const auth = {
-//       auth: { username: RAZORPAYX_KEY, password: RAZORPAYX_SECRET },
-//     };
-
-//     // ✅ Step 1: Create Contact
-//     const contactResponse = await axios.post(
-//       "https://api.razorpay.com/v1/contacts",
-//       {
-//         name: kyc.userId.name,
-//         email: kyc.userId.email,
-//         contact: kyc.userId.phone,
-//         type: "customer",
-//       },
-//       auth
-//     );
-//     const contactId = contactResponse.data.id;
-//     console.log(
-//       contactResponse,
-//       "CR-----------------------------------------------------"
-//     );
-
-//     if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(kyc.ifscCode)) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Invalid IFSC code. It must be 11 characters long.",
-//       });
-//     }
-
-//     // ✅ Step 2: Create Fund Account
-//     const fundResponse = await axios.post(
-//       "https://api.razorpay.com/v1/fund_accounts",
-//       {
-//         contact_id: contactId,
-//         account_type: "bank_account",
-//         bank_account: {
-//           name: kyc.accountHolderName,
-//           ifsc: kyc.ifscCode,
-//           account_number: kyc.bankAccountNumber,
-//         },
-//       },
-//       auth
-//     );
-//     const fundAccountId = fundResponse.data.id;
-//     console.log(
-//       fundResponse,
-//       "FR--------------------------------------------------------------"
-//     );
-
-//     // ✅ Step 3: Create Payout
-//     const payoutResponse = await axios.post(
-//       "https://api.razorpay.com/v1/payouts",
-//       {
-//         account_number: "2323230077721678", // Replace with actual RazorpayX account number
-//         fund_account_id: fundAccountId,
-//         amount: amount * 100, // Convert to paise
-//         currency: "INR",
-//         mode: "IMPS",
-//         purpose: "payout",
-//         queue_if_low_balance: true,
-//       },
-//       auth
-//     );
-//     const payoutId = payoutResponse.data.id;
-//     console.log(
-//       payoutResponse,
-//       "PR--------------------------------------------------------------"
-//     );
-
-//     // ✅ Step 4: Save Withdrawal
-//     const withdrawal = new Withdrawal({
-//       userId: kyc.userId._id,
-//       kyc: kyc._id,
-//       amount,
-//       status: "approved",
-//       payoutId,
-//     });
-//     await withdrawal.save();
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "Bank withdrawal approved successfully.",
-//       payout: payoutResponse.data,
-//     });
-//   } catch (error) {
-//     console.error("❌ Payout Error:", error.response?.data || error.message);
-//     return res.status(error.response?.status || 500).json({
-//       success: false,
-//       message: "Failed to process bank payout.",
-//       error: error.response?.data || error.message,
-//     });
-//   }
-// };
-
-// 2️⃣ GET /withdrawal/history → Fetch userId withdrawal history
-// router.get("/withdrawal/history", async (req, res) => {
-//   try {
-//     const { userId } = req.query;
-//     const history = await Withdrawal.find({ userId }).sort({ requestedAt: -1 });
-//     res.json(history);
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// });
-
-// 3️⃣ GET /admin/withdrawals → Admin view of pending withdrawals
-// router.get("/admin/withdrawals", async (req, res) => {
-//   try {
-//     const pendingWithdrawals = await Withdrawal.find({ status: "pending" });
-//     res.json(pendingWithdrawals);
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// });
-
-// 4️⃣ POST /admin/withdrawal/approve → Approve & trigger Razorpay payout
-// router.post("/admin/withdrawal/approve", async (req, res) => {
-//   try {
-//     const { withdrawalId } = req.body;
-//     const withdrawal = await Withdrawal.findById(withdrawalId).populate(
-//       "userId"
-//     );
-//     if (!withdrawal)
-//       return res.status(404).json({ message: "Withdrawal not found" });
-
-//     if (withdrawal.status !== "pending") {
-//       return res.status(400).json({ message: "Already processed" });
-//     }
-
-//     const kyc = await KYC.findOne({ userId: withdrawal.userId._id });
-//     if (!kyc) return res.status(400).json({ message: "KYC details missing" });
-
-//     const payout = await razorpay.payouts.create({
-//       account_number: process.env.RAZORPAY_ACCOUNT,
-//       amount: withdrawal.amount * 100,
-//       currency: "INR",
-//       mode: "IMPS",
-//       purpose: "payout",
-//       fund_account: {
-//         account_type: "bank_account",
-//         bank_account: {
-//           name: kyc.bankDetails.accountHolderName,
-//           ifsc: kyc.bankDetails.ifscCode,
-//           account_number: kyc.bankDetails.accountNumber,
-//         },
-//         contact: {
-//           name: withdrawal.userId.name,
-//           type: "customer",
-//           email: withdrawal.userId.email,
-//           phone: withdrawal.userId.phone,
-//         },
-//       },
-//     });
-
-//     withdrawal.status = "approved";
-//     await withdrawal.save();
-//     res.json({ message: "Payout successful", payout });
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// });
 
 module.exports = {
   getWithdrawalRequests,
