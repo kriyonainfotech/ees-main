@@ -423,79 +423,35 @@ const getPendingeKYCs = async (req, res) => {
   }
 };
 
-const fixedPaymentHistory = async (req, res) => {
-  // try {
-  //   console.log("⚡ Fetching payments from Razorpay...");
-  //   const payments = await razorpay.payments.all({ count: 100 });
-  //   console.log(`✅ Found ${payments.items.length} captured payments.`);
-  //   let updatedUsers = 0;
-
-  //   for (const payment of payments.items) {
-  //     if (payment.status !== "captured") continue;
-  //     console.log(
-  //       `🔍 Checking payment: ${payment.id} (Phone: ${payment.contact})`
-  //     );
-
-  //     const razorpayPhone = payment.contact.replace(/^\+91|\s+/g, "");
-  //     const user = await UserModel.findOne({
-  //       phone: { $regex: new RegExp("^" + razorpayPhone + "$", "i") },
-  //     });
-
-  //     if (!user) {
-  //       console.log(`🚫 No matching user found for phone: ${razorpayPhone}`);
-  //       continue;
-  //     }
-
-  //     console.log(`👤 User found: ${user.name} (${user.phone})`);
-  //     const alreadyExists = user.paymentHistory.some(
-  //       (p) => p.paymentId === payment.id
-  //     );
-  //     if (alreadyExists) {
-  //       console.log(`⚠️ Payment already exists for ${user.name}, skipping.`);
-  //       continue;
-  //     }
-
-  //     await UserModel.findByIdAndUpdate(user._id, {
-  //       $push: {
-  //         paymentHistory: {
-  //           paymentId: payment.id,
-  //           orderId: payment.order_id || `order_${payment.id}`,
-  //           amount: payment.amount / 100,
-  //           currency: payment.currency,
-  //           status: payment.status,
-  //           createdAt: new Date(payment.created_at * 1000),
-  //         },
-  //       },
-  //     });
-
-  //     updatedUsers++;
-  //     console.log(`✅ Payment added to ${user.name}'s history!`);
-  //   }
-
-  //   console.log(
-  //     `🎉 Successfully updated ${updatedUsers} users with new payments!`
-  //   );
-  //   res.json({ success: true, updatedUsers });
-  // } catch (error) {
-  //   console.error("❌ Error syncing payments:", error);
-  //   res.status(500).json({ success: false, error: error.message });
-  // }
-
+// controllers/userController.js
+const resetUserImages = async (req, res) => {
   try {
-    const users = await UserModel.find({
-      paymentHistory: { $exists: true, $not: { $size: 0 } },
-    }).select("_id name email phone paymentHistory");
+    const result = await UserModel.updateMany(
+      {}, // All users
+      {
+        $set: {
+          profilePic: "",
+          frontAadhar: "",
+          backAadhar: "",
+        },
+      }
+    );
 
     res.status(200).json({
       success: true,
-      count: users.length,
-      users,
+      message: "All user images reset successfully 🔄",
+      modifiedCount: result.modifiedCount,
     });
   } catch (error) {
-    console.error("Error fetching users with payment history:", error);
-    res.status(500).json({ success: false, message: "Server error", error });
+    console.error("❌ Error resetting user images:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while resetting user images",
+      error,
+    });
   }
 };
+
 
 module.exports = {
   getUsersByBCategory,
@@ -505,6 +461,6 @@ module.exports = {
   updateProfilePic,
   getUserCount,
   getPaymentVerifiedUser,
-  fixedPaymentHistory,
   getPendingeKYCs,
+  resetUserImages,
 };

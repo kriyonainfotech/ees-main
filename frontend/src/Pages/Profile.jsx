@@ -19,6 +19,7 @@ import { BsClipboardCheckFill, BsClipboardCheck } from "react-icons/bs";
 import { FaShare } from "react-icons/fa";
 import { FaPlus } from "react-icons/fa";
 import axios from "axios";
+import ProfileIcon from "../../public/User_icon.webp";
 
 const backend_API = import.meta.env.VITE_API_URL;
 
@@ -354,7 +355,7 @@ const Profile = () => {
                   />
                   <div className="absolute bottom-[-70px] right-14 w-[200px] h-[200px] rounded-full border-4 border-white ring-4 ring-orange-500 shadow-lg overflow-hidden">
                     <img
-                      src={user.profilePic}
+                      src={user.profilePic || ProfileIcon}
                       alt="Profile"
                       className="w-full h-full object-cover"
                     />

@@ -221,4 +221,27 @@ const getMonthlyInvestors = async (req, res) => {
   }
 };
 
-module.exports = { createPlan ,getMonthlyPlans, getYearlyPlans ,assignInvestmentPlan , getYearlyInvestors,getMonthlyInvestors};
+const getUserInvestments = async (req, res) => {
+  try {
+    const { userId } = req.body; // Assuming user ID is extracted from authentication middleware
+
+    const investments = await UserInvestment.find({ userId }).sort({
+      startDate: -1,
+    });
+
+    res.status(200).json({ success: true, investments });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+module.exports = {
+  createPlan,
+  getMonthlyPlans,
+  getYearlyPlans,
+  assignInvestmentPlan,
+  getYearlyInvestors,
+  getMonthlyInvestors,
+  getUserInvestments,
+};

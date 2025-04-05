@@ -23,9 +23,6 @@ const {
   resetPassword,
   getUserById,
 } = require("../controllers/authController");
-const multer = require("multer");
-const cloudinary = require("cloudinary").v2;
-const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const { verifyToken, isAdmin } = require("../middleware/auth");
 const { sendNotification } = require("../controllers/sendController");
 const {
@@ -34,40 +31,35 @@ const {
   setReferral,
   updateProfilePic,
   getPaymentVerifiedUser,
-  fixedPaymentHistory,
+  resetUserImages,
   getPendingeKYCs,
   resetekyc,
   getUserCount,
 } = require("../controllers/AuthController2");
+const { downloadFunction } = require("../controllers/migrateImages");
+const multer = require("multer");
+
+const bucketName = process.env.AWS_BUCKET_NAME;
+
 const router = express.Router();
 
-cloudinary.config({
-  cloud_name: "dcfm0aowt",
-  api_key: "576798684156725",
-  api_secret: "bhhXx57-OdaxvDdZOwaUKNvBXOA",
-});
+// const upload = multer({
+//   storage: multerS3({
+//     s3: s3, // ✅ Use the updated S3Client
+//     bucket: process.env.AWS_BUCKET_NAME,
+//     contentType: multerS3.AUTO_CONTENT_TYPE,
+//     key: (req, file, cb) => {
+//       cb(
+//         null,
+//         `user-images/${file.fieldname}_${Date.now()}_${file.originalname}`
+//       );
+//     },
+//   }),
+// });
 
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: "user",
-    allowed_formats: ["jpg", "png", "jpeg", "webp"],
-    transformation: [
-      {
-        width: 1024, // Restrict max width
-        height: 1024, // Restrict max height
-        crop: "limit", // No upscaling or stretching
-        quality: "auto:eco", // Compressed but retains good quality
-        fetch_format: "auto", // Converts to WebP/AVIF for best compression
-      },
-    ],
-  },
-});
-
-const upload = multer({
-  storage: storage,
-  // limits: { fileSize: 3 * 1024 * 1024 }, // Set max file size to 1.5MB
-});
+// Use memory storage for buffer upload
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 router.post(
   "/registerUser",
@@ -79,6 +71,7 @@ router.post(
   registerUser
 );
 router.post("/loginUser", loginUser);
+
 router.post(
   "/registerUserweb",
   upload.fields([
@@ -88,6 +81,58 @@ router.post(
   ]),
   registerUserweb
 );
+
+router.post(
+  "/uploadUserImages",
+  upload.fields([
+    { name: "frontAadhar", maxCount: 1 },
+    { name: "backAadhar", maxCount: 1 },
+    { name: "profilePic", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      const { userId } = req.body;
+      if (!userId) {
+        return res
+          .status(400)
+          .json({ success: false, message: "User ID is required" });
+      }
+
+      // ✅ Find user and update images
+      const updatedUser = await UserModel.findByIdAndUpdate(
+        userId,
+        {
+          frontAadhar: req.files.frontAadhar
+            ? req.files.frontAadhar[0].location
+            : "",
+          backAadhar: req.files.backAadhar
+            ? req.files.backAadhar[0].location
+            : "",
+          profilePic: req.files.profilePic
+            ? req.files.profilePic[0].location
+            : "",
+        },
+        { new: true }
+      );
+
+      if (!updatedUser) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
+      }
+
+      return res.json({
+        success: true,
+        message: "Images uploaded successfully!",
+        user: updatedUser,
+      });
+    } catch (error) {
+      console.error("[ERROR] ❌ Image Upload Failed:", error);
+      return res.status(500).json({ success: false, message: error.message });
+    }
+  }
+);
+
 router.post("/loginUserweb", loginUserweb);
 router.put("/approveUser", approveUser);
 
@@ -149,8 +194,9 @@ router.put("/updateUserAddressAndAadhar", updateUserAddressAndAadhar);
 router.put("/update-profile-pic", updateProfilePic);
 router.get("/paidusers", isAdmin, getPaymentVerifiedUser);
 router.get("/ekyc-pending", isAdmin, getPendingeKYCs);
-router.get("/fix-payment-history", fixedPaymentHistory);
+router.get("/getUserCount", getUserCount);
 
-router.get("/getUserCount",getUserCount)
+router.post("/resetUserImages", resetUserImages);
+
 
 module.exports = router;

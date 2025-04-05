@@ -5,6 +5,9 @@ const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const { v4: uuidv4 } = require("uuid");
+const { uploadToS3 } = require("../services/authService");
+const cloudinary = require("cloudinary").v2;
+
 const {
   validateFiles,
   parseAddress,
@@ -28,16 +31,231 @@ const getPublicIdFromUrl = (url) => {
   return null;
 };
 
+// const registerUser = async (req, res) => {
+//   const startTime = Date.now();
+//   console.log(`[${new Date().toISOString()}] Starting registerUser request`);
+
+//   try {
+//     // Get uploaded files
+//     const { files } = req;
+//     console.log("[DEBUG] Uploaded files:", files);
+
+//     // Validate file uploads
+//     if (
+//       !files?.frontAadhar?.[0] ||
+//       !files?.backAadhar?.[0] ||
+//       !files?.profilePic?.[0]
+//     ) {
+//       return res.status(400).json({
+//         success: false,
+//         message:
+//           "Please upload all required documents (Front Aadhar, Back Aadhar, and Profile Picture)",
+//       });
+//     }
+
+//     const {
+//       name,
+//       email,
+//       password,
+//       phone,
+//       businessCategory,
+//       businessName,
+//       businessAddress,
+//       businessDetaile,
+//       fcmToken,
+//       referralCode,
+//       // Address fields directly from body
+//       area,
+//       city,
+//       state,
+//       country,
+//       pincode,
+//     } = req.body;
+
+//     console.log("[DEBUG] Request body:", req.body);
+
+//     // Construct address object directly
+//     const address = {
+//       area,
+//       city,
+//       state,
+//       country,
+//       pincode,
+//     };
+
+//     // Validate address fields
+//     const requiredAddressFields = [
+//       "area",
+//       "city",
+//       "state",
+//       "country",
+//       "pincode",
+//     ];
+//     const missingFields = requiredAddressFields.filter(
+//       (field) => !address[field]
+//     );
+
+//     if (missingFields.length > 0) {
+//       return res.status(400).json({
+//         success: false,
+//         message: `Missing required address fields: ${missingFields.join(", ")}`,
+//       });
+//     }
+
+//     // Basic validation
+//     if (!name || !email || !password || !phone) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Please fill all required fields",
+//       });
+//     }
+
+//     // Check for existing user
+//     const [emailExists, phoneExists] = await Promise.all([
+//       UserModel.exists({ email }).lean(),
+//       UserModel.exists({ phone }).lean(),
+//     ]);
+
+//     if (emailExists) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Email already exists",
+//       });
+//     }
+
+//     if (phoneExists) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Phone number already exists",
+//       });
+//     }
+
+//     // Handle referral
+//     let referrer = null;
+//     if (referralCode) {
+//       referrer = await UserModel.findOne({ phone: referralCode })
+//         .select("_id phone walletBalance")
+//         .lean();
+//     }
+
+//     // Hash password
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     // Generate unique ID
+//     const uniqueId = await generateUniqueId();
+
+//     // Create user with all fields
+//     const user = new UserModel({
+//       userId: uniqueId,
+//       name,
+//       email,
+//       password: hashedPassword,
+//       phone,
+//       address,
+//       businessCategory,
+//       businessName,
+//       businessAddress,
+//       businessDetaile,
+//       fcmToken,
+//       frontAadhar: files.frontAadhar[0].path,
+//       backAadhar: files.backAadhar[0].path,
+//       profilePic: files.profilePic[0].path,
+//       referralCode: uuidv4(),
+//       referredBy: referrer ? [referrer._id] : [],
+//       isAdminApproved: false,
+//       walletBalance: 0,
+//     });
+
+//     // Use transaction for referral updates
+//     const session = await mongoose.startSession();
+//     session.startTransaction();
+
+//     try {
+//       await user.save({ session });
+
+//       // Update referrer if exists
+//       if (referrer) {
+//         await UserModel.findByIdAndUpdate(
+//           referrer._id,
+//           {
+//             $push: { referrals: user._id },
+//           },
+//           { session }
+//         );
+
+//         // Send notification to referrer
+//         await sendNotification({
+//           userId: referrer._id,
+//           title: "New Referral",
+//           message: `${name} has registered using your referral code!`,
+//           fcmToken: referrer.fcmToken,
+//         });
+//       }
+
+//       await session.commitTransaction();
+//     } catch (error) {
+//       // If there's an error, delete uploaded files
+//       try {
+//         const filesToDelete = [
+//           files.frontAadhar[0].path,
+//           files.backAadhar[0].path,
+//           files.profilePic[0].path,
+//         ];
+
+//         for (const filePath of filesToDelete) {
+//           const publicId = getPublicIdFromUrl(filePath);
+//           if (publicId) {
+//             await cloudinary.uploader.destroy(publicId);
+//           }
+//         }
+//       } catch (cleanupError) {
+//         console.error(
+//           "[ERROR] Failed to cleanup uploaded files:",
+//           cleanupError
+//         );
+//       }
+
+//       await session.abortTransaction();
+//       throw error;
+//     } finally {
+//       session.endSession();
+//     }
+
+//     console.log(`Registration completed in ${Date.now() - startTime}ms`);
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Registration successful! Awaiting admin approval.",
+//       user: {
+//         id: user._id,
+//         name: user.name,
+//         email: user.email,
+//         referralCode: user.referralCode,
+//         referredBy: referrer?.phone || null,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("[ERROR] Registration failed:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Registration failed. Please try again.",
+//       error: process.env.NODE_ENV === "development" ? error.message : undefined,
+//     });
+//   }
+// };
+
 const registerUser = async (req, res) => {
   const startTime = Date.now();
   console.log(`[${new Date().toISOString()}] Starting registerUser request`);
 
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    // Get uploaded files
     const { files } = req;
     console.log("[DEBUG] Uploaded files:", files);
 
-    // Validate file uploads
+    // Validate required images
     if (
       !files?.frontAadhar?.[0] ||
       !files?.backAadhar?.[0] ||
@@ -61,7 +279,6 @@ const registerUser = async (req, res) => {
       businessDetaile,
       fcmToken,
       referralCode,
-      // Address fields directly from body
       area,
       city,
       state,
@@ -69,18 +286,8 @@ const registerUser = async (req, res) => {
       pincode,
     } = req.body;
 
-    console.log("[DEBUG] Request body:", req.body);
+    const address = { area, city, state, country, pincode };
 
-    // Construct address object directly
-    const address = {
-      area,
-      city,
-      state,
-      country,
-      pincode,
-    };
-
-    // Validate address fields
     const requiredAddressFields = [
       "area",
       "city",
@@ -99,7 +306,6 @@ const registerUser = async (req, res) => {
       });
     }
 
-    // Basic validation
     if (!name || !email || !password || !phone) {
       return res.status(400).json({
         success: false,
@@ -107,23 +313,18 @@ const registerUser = async (req, res) => {
       });
     }
 
-    // Check for existing user
+    // Check existing email & phone
     const [emailExists, phoneExists] = await Promise.all([
       UserModel.exists({ email }).lean(),
       UserModel.exists({ phone }).lean(),
     ]);
 
-    if (emailExists) {
+    if (emailExists || phoneExists) {
       return res.status(400).json({
         success: false,
-        message: "Email already exists",
-      });
-    }
-
-    if (phoneExists) {
-      return res.status(400).json({
-        success: false,
-        message: "Phone number already exists",
+        message: emailExists
+          ? "Email already exists"
+          : "Phone number already exists",
       });
     }
 
@@ -131,17 +332,13 @@ const registerUser = async (req, res) => {
     let referrer = null;
     if (referralCode) {
       referrer = await UserModel.findOne({ phone: referralCode })
-        .select("_id phone walletBalance")
+        .select("_id phone walletBalance fcmToken")
         .lean();
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Generate unique ID
     const uniqueId = await generateUniqueId();
 
-    // Create user with all fields
     const user = new UserModel({
       userId: uniqueId,
       name,
@@ -154,71 +351,60 @@ const registerUser = async (req, res) => {
       businessAddress,
       businessDetaile,
       fcmToken,
-      frontAadhar: files.frontAadhar[0].path,
-      backAadhar: files.backAadhar[0].path,
-      profilePic: files.profilePic[0].path,
+      frontAadhar: "",
+      backAadhar: "",
+      profilePic: "",
       referralCode: uuidv4(),
       referredBy: referrer ? [referrer._id] : [],
       isAdminApproved: false,
       walletBalance: 0,
     });
 
-    // Use transaction for referral updates
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    await user.save({ session });
 
-    try {
-      await user.save({ session });
+    // Handle referral update
+    if (referrer) {
+      await UserModel.findByIdAndUpdate(
+        referrer._id,
+        {
+          $push: { referrals: user._id },
+        },
+        { session }
+      );
 
-      // Update referrer if exists
-      if (referrer) {
-        await UserModel.findByIdAndUpdate(
-          referrer._id,
-          {
-            $push: { referrals: user._id },
-          },
-          { session }
-        );
-
-        // Send notification to referrer
-        await sendNotification({
-          userId: referrer._id,
-          title: "New Referral",
-          message: `${name} has registered using your referral code!`,
-          fcmToken: referrer.fcmToken,
-        });
-      }
-
-      await session.commitTransaction();
-    } catch (error) {
-      // If there's an error, delete uploaded files
-      try {
-        const filesToDelete = [
-          files.frontAadhar[0].path,
-          files.backAadhar[0].path,
-          files.profilePic[0].path,
-        ];
-
-        for (const filePath of filesToDelete) {
-          const publicId = getPublicIdFromUrl(filePath);
-          if (publicId) {
-            await cloudinary.uploader.destroy(publicId);
-          }
-        }
-      } catch (cleanupError) {
-        console.error(
-          "[ERROR] Failed to cleanup uploaded files:",
-          cleanupError
-        );
-      }
-
-      await session.abortTransaction();
-      throw error;
-    } finally {
-      session.endSession();
+      await sendNotification({
+        userId: referrer._id,
+        title: "New Referral",
+        message: `${name} has registered using your referral code!`,
+        fcmToken: referrer.fcmToken,
+      });
     }
 
-    console.log(`Registration completed in ${Date.now() - startTime}ms`);
+    // ⬇️ Upload images to S3
+    try {
+      const fileKeys = await uploadToS3(files, user.userId);
+
+      await UserModel.findByIdAndUpdate(user._id, {
+        frontAadhar: fileKeys.frontAadhar || "",
+        backAadhar: fileKeys.backAadhar || "",
+        profilePic: fileKeys.profilePic || "",
+      });
+
+      console.log("[INFO] 🖼️ Images uploaded to S3 and user updated.");
+    } catch (uploadError) {
+      console.error("[ERROR] S3 upload failed:", uploadError);
+      await UserModel.findByIdAndDelete(user._id, { session });
+      await session.abortTransaction();
+      return res.status(500).json({
+        success: false,
+        message: "Image upload failed. Registration rolled back.",
+      });
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    console.log(`✅ Registration completed in ${Date.now() - startTime}ms`);
 
     return res.status(200).json({
       success: true,
@@ -232,6 +418,9 @@ const registerUser = async (req, res) => {
       },
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+
     console.error("[ERROR] Registration failed:", error);
     return res.status(500).json({
       success: false,
@@ -309,35 +498,12 @@ const loginUser = async (req, res) => {
 
 // const registerUserweb = async (req, res) => {
 //   try {
-//     // 1. Validate file uploads
 //     console.log("[INFO] 🟢 Starting user registration process...");
-//     const { files } = req;
-//     if (
-//       !files?.frontAadhar?.[0] ||
-//       !files?.backAadhar?.[0] ||
-//       !files?.profilePic?.[0]
-//     ) {
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "Please upload all required files" });
-//     }
 
-//     // 2. File size validation
-//     console.log("[INFO] 📏 Validating file sizes...");
-//     const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
-//     if (
-//       files.frontAadhar[0].size > MAX_FILE_SIZE ||
-//       files.backAadhar[0].size > MAX_FILE_SIZE ||
-//       files.profilePic[0].size > MAX_FILE_SIZE
-//     ) {
-//       console.warn("[WARN] ⚠️ File size exceeds the limit");
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "Each file must be less than 2MB" });
-//     }
+//     // 1️⃣ Validate files
+//     validateFiles(req.files);
 
-//     // 3. Extract form data
-
+//     // 2️⃣ Extract form data
 //     const {
 //       name,
 //       email,
@@ -351,7 +517,6 @@ const loginUser = async (req, res) => {
 //       fcmToken,
 //       referralCode,
 //     } = req.body;
-//     console.log("[INFO] 📝 Extracting form data...", req.body);
 
 //     if (!name || !email || !password || !phone || !address) {
 //       return res
@@ -359,65 +524,19 @@ const loginUser = async (req, res) => {
 //         .json({ success: false, message: "Missing required fields" });
 //     }
 
-//     // 4. Parse address
-//     console.log("[INFO] 🗺️ Parsing address...");
-//     let parsedAddress;
-//     try {
-//       parsedAddress =
-//         typeof address === "string" ? JSON.parse(address) : address;
-//     } catch (err) {
-//       console.error("[ERROR] ❌ Invalid address format:", err.message);
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "Invalid address format" });
-//     }
+//     // 3️⃣ Parse address
+//     const parsedAddress = parseAddress(address);
 
-//     // 5. Check for existing user and referrer
-//     console.log("[INFO] 🔎 Checking existing user and referrer...");
+//     // 4️⃣ Check existing user
+//     await checkExistingUser(email, phone);
+
+//     // 5️⃣ Find referrer
+//     const referrer = await findReferrer(referralCode);
+
+//     // 6️⃣ Hash password & create user
 //     const hashedPassword = await bcrypt.hash(password, 10);
-//     const existingUser = await UserModel.findOne({
-//       $or: [{ email }, { phone }],
-//     });
-//     if (existingUser) {
-//       console.warn("[WARN] ⚠️ User already exists:", existingUser);
-//       return res.status(400).json({
-//         success: false,
-//         message:
-//           existingUser.email === email
-//             ? "Email already exists"
-//             : "Phone number already exists",
-//       });
-//     }
-
-//     // Find referrer based on referralCode (which is a user ID)
-//     let referrer = null;
-//     if (referralCode) {
-//       console.log(referralCode, "rc0");
-//       if (/^\d{10}$/.test(referralCode)) {
-//         console.log(referralCode, "rc");
-//         // If referralCode is a 10-digit phone number
-//         referrer = await UserModel.findOne({ phone: referralCode }).select(
-//           "_id"
-//         );
-//       } else if (/^[a-fA-F0-9]{24}$/.test(referralCode)) {
-//         console.log(referralCode, "rc");
-//         // If referralCode is a 16-character user ID
-//         referrer = await UserModel.findById(referralCode).select("_id");
-//       }
-
-//       if (!referrer) {
-//         console.warn("[WARN] ⚠️ Invalid referral code provided.");
-//         return res.status(400).json({
-//           success: false,
-//           message: "Invalid referral code",
-//         });
-//       }
-//     }
-
 //     const uniqueId = await generateUniqueId();
 
-//     // 6. Create new user
-//     console.log("[INFO] 🆕 Creating new user...");
 //     const user = new UserModel({
 //       userId: uniqueId,
 //       name,
@@ -435,66 +554,37 @@ const loginUser = async (req, res) => {
 //       isAdminApproved: false,
 //       walletBalance: 0,
 //       earningsHistory: [],
-//       frontAadhar: files.frontAadhar[0].path,
-//       backAadhar: files.backAadhar[0].path,
-//       profilePic: files.profilePic[0].path,
+//       frontAadhar: req.files.frontAadhar
+//         ? req.files.frontAadhar[0].location
+//         : "",
+//       backAadhar: req.files.backAadhar ? req.files.backAadhar[0].location : "",
+//       profilePic: req.files.profilePic ? req.files.profilePic[0].location : "",
 //     });
 
-//     // 7. Save user and update referrer if applicable
+//     // Save user and update referrer
 //     user.referralCode = user._id;
 //     await user.save();
 //     console.log("[SUCCESS] ✅ User registration completed!", user);
 
-//     // Update referrer's referral list
 //     if (referrer) {
-//       await UserModel.findByIdAndUpdate(referrer._id, {
+//       await UserModel.findByIdAndUpdate(referrer?._id, {
 //         $push: { referrals: user._id },
 //       });
-//       console.log(`[INFO] 🔗 User added to ${referrer._id}'s referral list`);
-
-//       // **Send Notification to Referrer**
-//       if (referrer.fcmToken) {
-//         await sendNotification({
-//           senderName: "System",
-//           fcmToken: referrer.fcmToken,
-//           title: "New Referral Registered 🎉",
-//           message: `${name} has registered using your referral code!`,
-//           receiverId: referrer._id,
-//         });
-//         console.log("[INFO] 📩 Notification sent to referrer!");
-//       }
+//      console.log(`[INFO] 🔗 User added to ${referrer?._id}'s referral list`);
 //     }
 
-//     // ✅ **Notify All Admins**
-//     console.log("[INFO] 🔎 Fetching all admins...");
-//     const admins = await UserModel.find({ role: "admin" }).select(
-//       "_id fcmToken"
-//     );
+//     // 7️⃣ Notify Referrer
+//     await notifyReferrer(referrer, name);
 
-//     if (admins.length > 0) {
-//       const adminNotifications = admins
-//         .filter((admin) => admin.fcmToken)
-//         .map((admin) =>
-//           sendNotification({
-//             senderName: "System",
-//             fcmToken: admin.fcmToken,
-//             title: "New User Registered 🆕",
-//             message: `A new user, ${name}, has registered on the platform.`,
-//             receiverId: admin._id,
-//           })
-//         );
+//     // 8️⃣ Notify All Admins
+//     await notifyAdmins(name);
 
-//       await Promise.all(adminNotifications);
-//       console.log(`[INFO] 📩 Notifications sent to ${admins.length} admins!`);
-//     }
-
-//     // 9. Generate token
+//     // 9️⃣ Generate authentication token
 //     const token = jwt.sign(
 //       { id: user._id, isAdminApproved: false },
 //       process.env.JWT_SECRET,
 //       { expiresIn: "24h" }
 //     );
-//     console.log("[INFO] 🔐 Generating authentication token...");
 
 //     return res.status(200).json({
 //       success: true,
@@ -509,22 +599,15 @@ const loginUser = async (req, res) => {
 //     });
 //   } catch (error) {
 //     console.error("[ERROR] ❌ Registration failed:", error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Registration failed. Please try again.",
-//       error: error.message,
-//     });
+//     return res.status(500).json({ success: false, message: error.message });
 //   }
 // };
 
 const registerUserweb = async (req, res) => {
   try {
-    console.log("[INFO] 🟢 Starting user registration process...");
+    console.log("[INFO] 🟢 Starting user registration process...", req.body);
 
-    // 1️⃣ Validate files
-    validateFiles(req.files);
-
-    // 2️⃣ Extract form data
+    // 1️⃣ Extract form data
     const {
       name,
       email,
@@ -545,16 +628,14 @@ const registerUserweb = async (req, res) => {
         .json({ success: false, message: "Missing required fields" });
     }
 
-    // 3️⃣ Parse address
+    // 2️⃣ Parse address & check existing user
     const parsedAddress = parseAddress(address);
-
-    // 4️⃣ Check existing user
     await checkExistingUser(email, phone);
 
-    // 5️⃣ Find referrer
+    // 3️⃣ Find referrer
     const referrer = await findReferrer(referralCode);
 
-    // 6️⃣ Hash password & create user
+    // 4️⃣ Hash password & create user (WITHOUT IMAGES)
     const hashedPassword = await bcrypt.hash(password, 10);
     const uniqueId = await generateUniqueId();
 
@@ -575,39 +656,49 @@ const registerUserweb = async (req, res) => {
       isAdminApproved: false,
       walletBalance: 0,
       earningsHistory: [],
-      frontAadhar: req.files.frontAadhar[0].path,
-      backAadhar: req.files.backAadhar[0].path,
-      profilePic: req.files.profilePic[0].path,
+      frontAadhar: "", // 🔹 Empty, will be updated later
+      backAadhar: "",
+      profilePic: "",
     });
 
-    // Save user and update referrer
     user.referralCode = user._id;
     await user.save();
     console.log("[SUCCESS] ✅ User registration completed!", user);
 
+    // 5️⃣ Update referrer & notify
     if (referrer) {
-      await UserModel.findByIdAndUpdate(referrer?._id, {
+      await UserModel.findByIdAndUpdate(referrer._id, {
         $push: { referrals: user._id },
       });
-     console.log(`[INFO] 🔗 User added to ${referrer?._id}'s referral list`);
+      console.log(`[INFO] 🔗 User added to ${referrer._id}'s referral list`);
+      await notifyReferrer(referrer, name);
     }
-      
-    // 7️⃣ Notify Referrer
-    await notifyReferrer(referrer, name);
 
-    // 8️⃣ Notify All Admins
     await notifyAdmins(name);
 
-    // 9️⃣ Generate authentication token
+    // 6️⃣ Generate authentication token
     const token = jwt.sign(
       { id: user._id, isAdminApproved: false },
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
 
+    if (req.files) {
+      const fileKeys = await uploadToS3(req.files, user.userId);
+
+      const updateFields = {
+        ...(fileKeys.profilePic && { profilePic: fileKeys.profilePic }),
+        ...(fileKeys.frontAadhar && { frontAadhar: fileKeys.frontAadhar }),
+        ...(fileKeys.backAadhar && { backAadhar: fileKeys.backAadhar }),
+      };
+
+      await UserModel.findByIdAndUpdate(user._id, updateFields);
+      console.log("[INFO] 🖼️ Uploaded images and updated user:", updateFields);
+    }
+
     return res.status(200).json({
       success: true,
-      message: "Registration successful! Awaiting admin approval.",
+      message: "Registration successful! Now upload images.",
       user: {
         id: user._id,
         name: user.name,
@@ -920,37 +1011,22 @@ const logout = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const userId = req.user.id; // Assumes you have middleware setting req.user
-    console.log(
-      req.files,
-      req.file,
-      req.body,
-      "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj"
-    );
-    // Get file paths for the uploaded files
-    const profilePic = req.files?.profilePic
-      ? req.files.profilePic[0].path
-      : null;
-    const frontAadhar = req.files?.frontAadhar
-      ? req.files.frontAadhar[0].path
-      : null;
-    const backAadhar = req.files?.backAadhar
-      ? req.files.backAadhar[0].path
-      : null;
+    const userId = req.user.id;
 
-    console.log(
-      "Uploaded Files:",
-      { profilePic, frontAadhar, backAadhar },
-      "Request Body:",
-      req.body
-    );
+    console.log("[INFO] Incoming files and body:", req.files, req.body);
 
-    // Extract fields from the request body
+    // Upload files to S3 if present
+    let s3FileKeys = {};
+    if (req.files) {
+      s3FileKeys = await uploadToS3(req.files, userId);
+      console.log("[INFO] S3 uploaded keys:", s3FileKeys);
+    }
+
     const {
       name,
       email,
       phone,
-      address, // Address should be sent as a JSON object from the frontend
+      address,
       businessCategory,
       businessName,
       businessAddress,
@@ -958,7 +1034,6 @@ const updateProfile = async (req, res) => {
       fcmToken,
     } = req.body;
 
-    // Prepare the fields to be updated
     const updatedFields = {};
 
     if (name) updatedFields.name = name;
@@ -966,34 +1041,35 @@ const updateProfile = async (req, res) => {
     if (phone) updatedFields.phone = phone;
     if (address) {
       try {
-        // If address is sent as a JSON string, parse it
         const parsedAddress =
           typeof address === "string" ? JSON.parse(address) : address;
         updatedFields.address = parsedAddress;
       } catch (error) {
         return res.status(400).json({
           success: false,
-          message:
-            "Invalid address format. Address must be a valid JSON object.",
+          message: "Invalid address format. Must be valid JSON.",
         });
       }
     }
-    if (profilePic) updatedFields.profilePic = profilePic;
-    if (frontAadhar) updatedFields.frontAadhar = frontAadhar;
-    if (backAadhar) updatedFields.backAadhar = backAadhar;
+
+    // Add S3 keys if uploaded
+    if (s3FileKeys.profilePic) updatedFields.profilePic = s3FileKeys.profilePic;
+    if (s3FileKeys.frontAadhar)
+      updatedFields.frontAadhar = s3FileKeys.frontAadhar;
+    if (s3FileKeys.backAadhar) updatedFields.backAadhar = s3FileKeys.backAadhar;
+
     if (businessCategory) updatedFields.businessCategory = businessCategory;
     if (businessName) updatedFields.businessName = businessName;
     if (businessAddress) updatedFields.businessAddress = businessAddress;
     if (businessDetaile) updatedFields.businessDetaile = businessDetaile;
     if (fcmToken) updatedFields.fcmToken = fcmToken;
 
-    // Update user data in the database
     const updatedUser = await UserModel.findByIdAndUpdate(
       userId,
       { $set: updatedFields },
-      { new: true, runValidators: true } // Validate fields before updating
+      { new: true, runValidators: true }
     );
-    console.log(updatedUser, "updatedUser");
+
     if (!updatedUser) {
       return res.status(404).json({
         success: false,
@@ -1007,7 +1083,7 @@ const updateProfile = async (req, res) => {
       user: updatedUser,
     });
   } catch (error) {
-    console.error(error);
+    console.error("[ERROR] Profile update failed:", error);
     return res.status(500).json({
       success: false,
       message: "An error occurred while updating the profile",
@@ -1018,7 +1094,7 @@ const updateProfile = async (req, res) => {
 
 const updateProfileMobile = async (req, res) => {
   try {
-    const userId = req.body.userId; // Extract userId from request body
+    const { userId } = req.body;
     if (!userId) {
       return res.status(400).json({
         success: false,
@@ -1026,22 +1102,16 @@ const updateProfileMobile = async (req, res) => {
       });
     }
 
-    const profilePic = req.file ? req.file.path : null;
+    const profilePic = req.file?.path || null;
 
-    console.log(
-      req.file,
-      "Uploaded File:",
-      req.body,
-      "Request Body:",
-      profilePic
-    );
+    console.log("[DEBUG] Uploaded File:", req.file);
+    console.log("[DEBUG] Request Body:", req.body);
 
-    // Extract fields from the request body
     const {
       name,
       email,
       phone,
-      address, // Address should be sent as a JSON object from the frontend
+      address,
       businessCategory,
       businessName,
       businessAddress,
@@ -1049,18 +1119,23 @@ const updateProfileMobile = async (req, res) => {
       fcmToken,
     } = req.body;
 
-    // Prepare the fields to be updated
-    const updatedFields = {};
+    const updatedFields = {
+      ...(name && { name }),
+      ...(email && { email }),
+      ...(phone && { phone }),
+      ...(profilePic && { profilePic }),
+      ...(businessCategory && { businessCategory }),
+      ...(businessName && { businessName }),
+      ...(businessAddress && { businessAddress }),
+      ...(businessDetaile && { businessDetaile }),
+      ...(fcmToken && { fcmToken }),
+    };
 
-    if (name) updatedFields.name = name;
-    if (email) updatedFields.email = email;
-    if (phone) updatedFields.phone = phone;
+    // Address parsing & validation
     if (address) {
       try {
-        // If address is sent as a JSON string, parse it
-        const parsedAddress =
+        updatedFields.address =
           typeof address === "string" ? JSON.parse(address) : address;
-        updatedFields.address = parsedAddress;
       } catch (error) {
         return res.status(400).json({
           success: false,
@@ -1069,20 +1144,12 @@ const updateProfileMobile = async (req, res) => {
         });
       }
     }
-    if (profilePic) updatedFields.profilePic = profilePic;
-    if (businessCategory) updatedFields.businessCategory = businessCategory;
-    if (businessName) updatedFields.businessName = businessName;
-    if (businessAddress) updatedFields.businessAddress = businessAddress;
-    if (businessDetaile) updatedFields.businessDetaile = businessDetaile;
-    if (fcmToken) updatedFields.fcmToken = fcmToken;
 
-    // Update user data in the database
     const updatedUser = await UserModel.findByIdAndUpdate(
       userId,
       { $set: updatedFields },
-      { new: true, runValidators: true } // Validate fields before updating
+      { new: true, runValidators: true }
     );
-    console.log(updatedUser, "update user mobile");
 
     if (!updatedUser) {
       return res.status(404).json({
@@ -1097,14 +1164,15 @@ const updateProfileMobile = async (req, res) => {
       user: updatedUser,
     });
   } catch (error) {
-    console.log(error);
+    console.error("[ERROR] updateProfileMobile:", error);
     return res.status(500).json({
       success: false,
       message: "An error occurred while updating the profile",
-      error: error.message,
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
+
 
 // const deleteUser = async (req, res) => {
 //   try {
@@ -1179,7 +1247,6 @@ const updateProfileMobile = async (req, res) => {
 //     });
 //   }
 // };
-const cloudinary = require("cloudinary").v2;
 
 const deleteUser = async (req, res) => {
   try {
@@ -1265,18 +1332,8 @@ const deleteUser = async (req, res) => {
 
 const UpdateUser = async (req, res) => {
   try {
-    console.log("🔹 Incoming Request Body:", req.body);
-
-    const userId = req.body.userId; // Extract user ID from request body
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      console.log("❌ Invalid User ID:", userId);
-      return res.status(400).json({
-        success: false,
-        message: "Invalid User ID ❌",
-      });
-    }
-
     const {
+      userId,
       name,
       email,
       phone,
@@ -1287,56 +1344,50 @@ const UpdateUser = async (req, res) => {
       businessDetaile,
     } = req.body;
 
-    console.log("📝 Fields to Update:", {
-      name,
-      email,
-      phone,
-      address,
-      businessCategory,
-      businessName,
-      businessAddress,
-      businessDetaile,
-    });
+    console.log("🔹 Incoming Update Request for User:", userId);
 
-    // Check if at least one field is provided
-    if (
-      !name &&
-      !email &&
-      !phone &&
-      !address &&
-      !businessCategory &&
-      !businessName &&
-      !businessAddress &&
-      !businessDetaile
-    ) {
-      console.log("⚠️ No fields provided for update");
+    // Validate userId format early
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid User ID ❌",
+      });
+    }
+
+    // Construct updatedFields dynamically (skip undefined/null values)
+    const updatedFields = {};
+
+    if (name) updatedFields.name = name;
+    if (email) updatedFields.email = email;
+    if (phone) updatedFields.phone = phone;
+
+    if (address) {
+      try {
+        const parsedAddress =
+          typeof address === "string" ? JSON.parse(address) : address;
+        updatedFields.address = parsedAddress;
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid address format. Must be JSON.",
+        });
+      }
+    }
+
+    if (businessCategory) updatedFields.businessCategory = businessCategory;
+    if (businessName) updatedFields.businessName = businessName;
+    if (businessAddress) updatedFields.businessAddress = businessAddress;
+    if (typeof businessDetaile !== "undefined")
+      updatedFields.businessDetaile = businessDetaile;
+
+    if (Object.keys(updatedFields).length === 0) {
       return res.status(400).json({
         success: false,
         message: "No fields to update provided ⚠️",
       });
     }
 
-    // Construct update object
-    const updatedFields = {};
-    if (name) updatedFields.name = name;
-    if (email) updatedFields.email = email;
-    if (phone) updatedFields.phone = phone;
-    if (address) {
-      updatedFields.address = {
-        ...address,
-      };
-    }
-    if (businessCategory) updatedFields.businessCategory = businessCategory;
-    if (businessName) updatedFields.businessName = businessName;
-    if (businessAddress) updatedFields.businessAddress = businessAddress;
-   if (businessDetaile !== undefined) {
-      updatedFields.businessDetaile = businessDetaile;
-    }
-
-
-    console.log("🛠️ Updating User:", userId, "with Data:", updatedFields);
-
-    // Update user in database
+    // 🔄 Update user
     const updatedUser = await UserModel.findByIdAndUpdate(
       userId,
       { $set: updatedFields },
@@ -1344,14 +1395,13 @@ const UpdateUser = async (req, res) => {
     );
 
     if (!updatedUser) {
-      console.log("🔍 User not found:", userId);
       return res.status(404).json({
         success: false,
         message: "User not found 🚫",
       });
     }
 
-    console.log("✅ Profile Updated Successfully:", updatedUser);
+    console.log("✅ User updated:", updatedUser._id);
 
     return res.status(200).json({
       success: true,
@@ -1359,14 +1409,14 @@ const UpdateUser = async (req, res) => {
       user: updatedUser,
     });
   } catch (error) {
-    console.error("🔥 Error Updating Profile:", error);
+    console.error("🔥 Error Updating User:", error);
     return res.status(500).json({
       success: false,
       message: "An error occurred while updating the profile ❗",
       error: error.message,
     });
   }
-};  
+};
 
 const setUserStatus = async (req, res) => {
   try {

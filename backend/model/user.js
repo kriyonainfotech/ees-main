@@ -235,17 +235,18 @@ const userSchema = new mongoose.Schema(
     ],
     paymentHistory: [
       {
-        orderId: String,
-        paymentId: String,
-        amount: Number,
-        currency: String,
+        orderId: { type: String },
+        paymentId: { type: String, default: null },
+        amount: { type: Number },
+        currency: { type: String },
         status: {
           type: String,
           enum: ["created", "authorized", "captured", "failed"],
+          default: "created",
         },
-        createdAt: Date,
-        updatedAt: Date,
-        paymentLink: String,
+        paymentLink: { type: String },
+        createdAt: { type: Date, default: Date.now },
+        updatedAt: { type: Date, default: Date.now },
       },
     ],
     withdrawalHistory: [

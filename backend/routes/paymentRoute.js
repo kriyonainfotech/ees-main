@@ -5,6 +5,7 @@ const {
   generateGstInvoice,
   capturePayment,
   verifyCapturedPayment,
+  paymentVerifeid,
 } = require("../controllers/paymentController");
 
 const router = express.Router();
@@ -14,5 +15,6 @@ router.post("/verify-payment", verifyPayment);
 router.post("/reports", generateGstInvoice);
 router.post("/capture-payment", capturePayment);
 router.post("/verify-capture-payment", verifyCapturedPayment);
+router.post("/paymentVerified", paymentVerifeid);
 
 module.exports = router;

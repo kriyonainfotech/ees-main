@@ -199,6 +199,28 @@ const UserDetailsModal = ({ user, onClose, onApprove, setSelectedUser }) => {
     }
   };
 
+  const handleVerifyPayment = async () => {
+    try {
+      const response = await axios.post(
+        `${backend_API}/payment/verify-capture-payment`,
+        {
+          userId: user._id,
+          // paymentId
+        }
+      );
+
+      if (response.data.success) {
+        toast("Payment verified successfully!");
+        // setUser((prevUser) => ({ ...prevUser, paymentVerified: true })); // Update state
+      } else {
+        alert("Error: " + response.data.message);
+      }
+    } catch (error) {
+      console.error("Error verifying payment:", error);
+      toast("Something went wrong!");
+    }
+  };
+
   return (
     <div className="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
       <div className="modal-content bg-white p-2 rounded shadow-lg w-full sm:w-3/4 md:w-1/2 lg:w-1/3 max-w-4xl h-[80vh] overflow-hidden">
@@ -257,7 +279,7 @@ const UserDetailsModal = ({ user, onClose, onApprove, setSelectedUser }) => {
                 <td className="border border-gray-300 px-4 py-2 font-semibold">
                   Payment Status
                 </td>
-                <td className="border border-gray-300 px-4 py-2 font-semibold text-blue-600">
+                <td className="border border-gray-300 px-4 py-2 flex justify-between font-semibold text-blue-600">
                   <p>{paymentStatus || "N/A"}</p>
                   {paymentStatus === "authorized" && (
                     <div className="flex gap-2 align-items-center">
@@ -270,6 +292,14 @@ const UserDetailsModal = ({ user, onClose, onApprove, setSelectedUser }) => {
                         Capture Payment
                       </button>
                     </div>
+                  )}
+                  {!user.paymentVerified && (
+                    <button
+                      className="bg-green-500 text-white px-3 py-1 rounded"
+                      onClick={handleVerifyPayment}
+                    >
+                      Verify Payment
+                    </button>
                   )}
                 </td>
               </tr>

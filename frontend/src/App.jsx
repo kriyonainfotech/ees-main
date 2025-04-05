@@ -47,7 +47,6 @@ const Dashboard = lazy(() => import("./adminPages/Dashboard"));
 const Wallete = lazy(() => import("./Pages/Wallete"));
 const Team = lazy(() => import("./Pages/Team"));
 const ManageAdmin = lazy(() => import("./adminPages/ManageAdmin"));
-
 const ONE_SIGNAL_APP_ID = "YOUR_ONESIGNAL_APP_ID";
 const backend_API = import.meta.env.VITE_API_URL;
 

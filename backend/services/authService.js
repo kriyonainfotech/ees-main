@@ -2,6 +2,8 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const UserModel = require("../model/user");
 const { sendNotification } = require("../controllers/sendController");
+const AWS = require("aws-sdk");
+const s3 = new AWS.S3();
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
@@ -35,7 +37,7 @@ const parseAddress = (address) => {
 
 // ✅ 3. Check if User Already Exists
 const checkExistingUser = async (email, phone) => {
-  console.log(email, 'email');
+  console.log(email, "email");
   const existingUser = await UserModel.findOne({ $or: [{ email }, { phone }] });
   if (existingUser) {
     throw new Error(
@@ -66,8 +68,6 @@ const findReferrer = async (referralCode) => {
 // ✅ 5. Notify Referrer
 const notifyReferrer = async (referrer, userName) => {
   if (referrer && referrer.fcmToken) {
-
-    
     await sendNotification({
       type: "referral",
       senderName: "System",
@@ -85,7 +85,7 @@ const notifyAdmins = async (userName) => {
     "67a60210ad6aa4fa92a3aa0a",
     "67a1b44479dba4870ea1083a",
     "677f5c7cead1254b486e57c0",
-    "67c2a58d91f8cfbbb876f54d"
+    "67c2a58d91f8cfbbb876f54d",
   ]; // Replace with actual admin IDs
 
   const admins = await UserModel.find({
@@ -107,6 +107,34 @@ const notifyAdmins = async (userName) => {
   await Promise.all(adminNotifications);
 };
 
+const uploadToS3 = async (files, userId) => {
+  const uploadFile = (file) => {
+    const params = {
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: `user-images/${userId}/${file.fieldname}_${Date.now()}_${
+        file.originalname
+      }`,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+    };
+
+    return s3.upload(params).promise();
+  };
+
+  const result = {};
+  for (const [fieldname, fileArray] of Object.entries(files)) {
+    const file = fileArray[0]; // maxCount: 1
+    if (!file) continue;
+
+    const uploaded = await uploadFile(file);
+    result[fieldname] = uploaded.Location; // ✅ Full URL
+  }
+
+  return result;
+};
+
+// ✅ 6. Hash Password
+
 module.exports = {
   validateFiles,
   parseAddress,
@@ -114,4 +142,5 @@ module.exports = {
   findReferrer,
   notifyReferrer,
   notifyAdmins,
+  uploadToS3,
 };

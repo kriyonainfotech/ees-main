@@ -429,6 +429,116 @@ const distributeReferralRewards = async (newUserId, referrerId) => {
 //   }
 // };
 
+// const verifyPayment = async (req, res) => {
+//   try {
+//     const { payment_id, user_id } = req.body;
+
+//     if (!payment_id || !user_id) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Payment ID and User ID are required",
+//       });
+//     }
+
+//     const paymentDetails = await razorpayInstance.payments.fetch(payment_id);
+//     const orderId = paymentDetails.order_id; // Get associated order ID
+
+//     if (!orderId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Order ID not found in payment details",
+//       });
+//     }
+
+//     console.log(`🔍 Payment Details:`, paymentDetails);
+
+
+//     // Update payment history with payment ID and status
+//     const updateResult = await UserModel.updateOne(
+//       {
+//         _id: user_id,
+//         "paymentHistory.orderId": orderId,
+//       },
+//       {
+//         $set: {
+//           "paymentHistory.$.paymentId": payment_id,
+//           "paymentHistory.$.status": paymentDetails.status,
+//           "paymentHistory.$.updatedAt": new Date(),
+//         },
+//       }
+//     );
+
+//     if (updateResult.matchedCount === 0) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Order not found in payment history",
+//       });
+//     }
+
+//     // Handle failed payments
+//     if (paymentDetails.status === "failed") {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Payment failed",
+//         error: paymentDetails.error_description,
+//       });
+//     }
+
+//     // Handle authorized but not captured (manual capture scenario)
+//     if (paymentDetails.status === "authorized") {
+//       await razorpayInstance.payments.capture(
+//         payment_id,
+//         paymentDetails.amount
+//       );
+//     }
+
+//     // Final status update
+//     const updatedPayment = await razorpayInstance.payments.fetch(payment_id);
+//     await UserModel.updateOne(
+//       { _id: user_id, "paymentHistory.orderId": orderId },
+//       {
+//         $set: {
+//           "paymentHistory.$.status": updatedPayment.status,
+//           "paymentHistory.$.updatedAt": new Date(),
+//         },
+//       }
+//     );
+
+//     // Update user status and handle referrals
+//     const expiryDate = new Date();
+//     expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+
+//     const updatedUser = await UserModel.findByIdAndUpdate(
+//       user_id,
+//       {
+//         paymentVerified: true,
+//         paymentExpiry: expiryDate,
+//       },
+//       { new: true }
+//     );
+
+//     if (updatedUser.referredBy.length > 0) {
+//       await distributeReferralRewards(
+//         updatedUser._id,
+//         updatedUser.referredBy[0]
+//       );
+//     }
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Payment verified and updated successfully",
+//       user: updatedUser,
+//     });
+//   } catch (error) {
+//     console.error("[ERROR] Payment verification error:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Error verifying payment",
+//       error: error.message,
+//     });
+//   }
+// };
+
 const verifyPayment = async (req, res) => {
   try {
     const { payment_id, user_id } = req.body;
@@ -440,10 +550,33 @@ const verifyPayment = async (req, res) => {
       });
     }
 
+    // Fetch payment details from Razorpay
     const paymentDetails = await razorpayInstance.payments.fetch(payment_id);
     const orderId = paymentDetails.order_id; // Get associated order ID
 
-    // Update payment history with payment ID and status
+    if (!orderId) {
+      return res.status(400).json({
+        success: false,
+        message: "Order ID not found in payment details",
+      });
+    }
+
+    console.log(`🔍 Payment Details:`, paymentDetails);
+
+    // If payment is "authorized", capture it manually
+    if (paymentDetails.status === "authorized") {
+      await razorpayInstance.payments.capture(
+        payment_id,
+        paymentDetails.amount
+      );
+    }
+
+    // Fetch latest payment details after capture
+    const updatedPayment = await razorpayInstance.payments.fetch(payment_id);
+
+    console.log(`✅ Updated Payment Details:`, updatedPayment);
+
+    // Update payment history with paymentId and new status
     const updateResult = await UserModel.updateOne(
       {
         _id: user_id,
@@ -451,8 +584,8 @@ const verifyPayment = async (req, res) => {
       },
       {
         $set: {
-          "paymentHistory.$.paymentId": payment_id,
-          "paymentHistory.$.status": paymentDetails.status,
+          "paymentHistory.$.paymentId": payment_id, // ✅ Payment ID update
+          "paymentHistory.$.status": updatedPayment.status, // ✅ Update status
           "paymentHistory.$.updatedAt": new Date(),
         },
       }
@@ -465,36 +598,16 @@ const verifyPayment = async (req, res) => {
       });
     }
 
-    // Handle failed payments
-    if (paymentDetails.status === "failed") {
+    // If payment failed, return error response
+    if (updatedPayment.status === "failed") {
       return res.status(400).json({
         success: false,
         message: "Payment failed",
-        error: paymentDetails.error_description,
+        error: updatedPayment.error_description,
       });
     }
 
-    // Handle authorized but not captured (manual capture scenario)
-    if (paymentDetails.status === "authorized") {
-      await razorpayInstance.payments.capture(
-        payment_id,
-        paymentDetails.amount
-      );
-    }
-
-    // Final status update
-    const updatedPayment = await razorpayInstance.payments.fetch(payment_id);
-    await UserModel.updateOne(
-      { _id: user_id, "paymentHistory.orderId": orderId },
-      {
-        $set: {
-          "paymentHistory.$.status": updatedPayment.status,
-          "paymentHistory.$.updatedAt": new Date(),
-        },
-      }
-    );
-
-    // Update user status and handle referrals
+    // ✅ Update user payment status
     const expiryDate = new Date();
     expiryDate.setFullYear(expiryDate.getFullYear() + 1);
 
@@ -507,12 +620,7 @@ const verifyPayment = async (req, res) => {
       { new: true }
     );
 
-    if (updatedUser.referredBy.length > 0) {
-      await distributeReferralRewards(
-        updatedUser._id,
-        updatedUser.referredBy[0]
-      );
-    }
+    console.log(`✅ User Updated:`, updatedUser);
 
     return res.status(200).json({
       success: true,
@@ -528,6 +636,7 @@ const verifyPayment = async (req, res) => {
     });
   }
 };
+
 
 const generateGstInvoice = async (req, res) => {
   try {
@@ -682,102 +791,102 @@ const generateGstInvoice = async (req, res) => {
   }
 };
 
- const capturePayment = async (req, res) => {
-   try {
-     const { paymentId, userId } = req.body;
+const capturePayment = async (req, res) => {
+  try {
+    const { paymentId, userId } = req.body;
 
-     // Validate input
-     if (!paymentId || !userId) {
-       return res.status(400).json({
-         success: false,
-         message: "Payment ID and User ID are required",
-       });
-     }
+    // Validate input
+    if (!paymentId || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment ID and User ID are required",
+      });
+    }
 
-     // 1. Fetch payment details from Razorpay
-     const paymentDetails = await razorpayInstance.payments.fetch(paymentId);
+    // 1. Fetch payment details from Razorpay
+    const paymentDetails = await razorpayInstance.payments.fetch(paymentId);
 
-     // Validate payment state
-     if (paymentDetails.status !== "authorized") {
-       return res.status(400).json({
-         success: false,
-         message: `Payment cannot be captured. Current status: ${paymentDetails.status}`,
-       });
-     }
+    // Validate payment state
+    if (paymentDetails.status !== "authorized") {
+      return res.status(400).json({
+        success: false,
+        message: `Payment cannot be captured. Current status: ${paymentDetails.status}`,
+      });
+    }
 
-     // 2. Capture the payment
-     const capturedPayment = await razorpayInstance.payments.capture(
-       paymentId,
-       paymentDetails.amount
-     );
+    // 2. Capture the payment
+    const capturedPayment = await razorpayInstance.payments.capture(
+      paymentId,
+      paymentDetails.amount
+    );
 
-     // 3. Update payment history and user status
-     const expiryDate = new Date();
-     expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+    // 3. Update payment history and user status
+    const expiryDate = new Date();
+    expiryDate.setFullYear(expiryDate.getFullYear() + 1);
 
-     const updateResult = await UserModel.findOneAndUpdate(
-       {
-         _id: userId,
-         "paymentHistory.paymentId": paymentId,
-         "paymentHistory.status": "authorized", // Ensure we're updating correct record
-       },
-       {
-         $set: {
-           "paymentHistory.$.status": "captured",
-           "paymentHistory.$.updatedAt": new Date(),
-           paymentVerified: true,
-           paymentExpiry: expiryDate,
-         },
-       },
-       { new: true }
-     );
+    const updateResult = await UserModel.findOneAndUpdate(
+      {
+        _id: userId,
+        "paymentHistory.paymentId": paymentId,
+        "paymentHistory.status": "authorized", // Ensure we're updating correct record
+      },
+      {
+        $set: {
+          "paymentHistory.$.status": "captured",
+          "paymentHistory.$.updatedAt": new Date(),
+          paymentVerified: true,
+          paymentExpiry: expiryDate,
+        },
+      },
+      { new: true }
+    );
 
-     if (!updateResult) {
-       return res.status(404).json({
-         success: false,
-         message: "User or payment record not found",
-       });
-     }
+    if (!updateResult) {
+      return res.status(404).json({
+        success: false,
+        message: "User or payment record not found",
+      });
+    }
 
-     // 4. Distribute referrals only if applicable
-     if (updateResult.referredBy?.length > 0) {
-       await distributeReferralRewards(
-         updateResult._id, // newUserId
-         updateResult.referredBy[0] // referrerId
-       );
-     }
+    // 4. Distribute referrals only if applicable
+    if (updateResult.referredBy?.length > 0) {
+      await distributeReferralRewards(
+        updateResult._id, // newUserId
+        updateResult.referredBy[0] // referrerId
+      );
+    }
 
-     // 5. Verify final state
-     const finalPaymentState = await razorpayInstance.payments.fetch(paymentId);
+    // 5. Verify final state
+    const finalPaymentState = await razorpayInstance.payments.fetch(paymentId);
 
-     return res.status(200).json({
-       success: true,
-       message: "Payment captured and verified",
-       data: {
-         razorpayStatus: finalPaymentState.status,
-         userStatus: updateResult.paymentVerified,
-         expiryDate: updateResult.paymentExpiry,
-       },
-     });
-   } catch (error) {
-     console.error("[PAYMENT CAPTURE ERROR]", error);
+    return res.status(200).json({
+      success: true,
+      message: "Payment captured and verified",
+      data: {
+        razorpayStatus: finalPaymentState.status,
+        userStatus: updateResult.paymentVerified,
+        expiryDate: updateResult.paymentExpiry,
+      },
+    });
+  } catch (error) {
+    console.error("[PAYMENT CAPTURE ERROR]", error);
 
-     // Handle specific Razorpay errors
-     const errorMessage = error.error?.description || error.message;
+    // Handle specific Razorpay errors
+    const errorMessage = error.error?.description || error.message;
 
-     return res.status(error.statusCode || 500).json({
-       success: false,
-       message: "Capture failed",
-       error: errorMessage,
-       resolution: "Please check payment authorization window (max 1 day)",
-     });
-   }
- };
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: "Capture failed",
+      error: errorMessage,
+      resolution: "Please check payment authorization window (max 1 day)",
+    });
+  }
+};
 
 const verifyCapturedPayment = async (req, res) => {
   try {
     const { paymentId, userId } = req.body;
-    console.log(`🔍 Checking payment status for user: ${userId}`);
+    console.log(`🔍 Checking payment status for user: ${req.body}`);
 
     // Fetch user details
     const user = await UserModel.findById(userId);
@@ -849,13 +958,13 @@ const verifyCapturedPayment = async (req, res) => {
     // Loop through paymentHistory and verify each payment
     for (let payment of user.paymentHistory) {
       console.log(
-        `🔄 Checking payment ID: ${payment.paymentId} (Current status: ${payment.status})`
+        `🔄 Checking payment ID: ${paymentId} (Current status: ${payment.status})`
       );
 
       if (payment.status !== "captured") {
         try {
           const paymentDetails = await axios.get(
-            `https://api.razorpay.com/v1/payments/${payment.paymentId}`,
+            `https://api.razorpay.com/v1/payments/${paymentId}`,
             {
               auth: {
                 username: process.env.RAZORPAY_KEY_ID,
@@ -866,24 +975,22 @@ const verifyCapturedPayment = async (req, res) => {
 
           const paymentStatus = paymentDetails.data.status;
           console.log(
-            `💳 Razorpay Response: Payment ${
-              payment.paymentId
-            } is ${paymentStatus.toUpperCase()}`
+            `💳 Razorpay Response: Payment ${paymentId} is ${paymentStatus.toUpperCase()}`
           );
 
           if (paymentStatus === "captured") {
             payment.status = "captured"; // Update status in paymentHistory
             paymentVerified = true; // Mark payment as verified
-            console.log(`✅ Payment ${payment.paymentId} captured!`);
+            console.log(`✅ Payment ${paymentId} captured!`);
           }
         } catch (error) {
-          console.error(
-            `❌ Error verifying payment ${payment.paymentId}:`,
+          console.log(
+            `❌ Error verifying payment ${paymentId}:`,
             error.message
           );
         }
       } else {
-        console.log(`⚡ Payment ${payment.paymentId} already captured.`);
+        console.log(`⚡ Payment ${paymentId} already captured.`);
       }
     }
 
@@ -896,20 +1003,47 @@ const verifyCapturedPayment = async (req, res) => {
       user
     );
 
-    await distributeReferralRewards(userId, user.referredBy[0]);
+    // await distributeReferralRewards(userId, user.referredBy[0]);
 
     return res.json({
       success: true,
       message: paymentVerified
         ? "✅ Payment verified and updated"
-        : "⚠️ No captured payments found",
+        : "✅ Payment verified and updated !!!!",
       user,
     });
   } catch (error) {
-    console.error("🔥 Error verifying payment:", error.message);
+    console.log("🔥 Error verifying payment:", error.message);
     return res
       .status(500)
       .json({ success: false, message: "Internal server error" });
+  }
+};
+
+const paymentVerifeid = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    // Update only the paymentVerified field
+    const updatedUser = await UserModel.findByIdAndUpdate(
+      userId,
+      { $set: { paymentVerified: true } }, // Only updating this field
+      { new: true } // Return updated document
+    );
+
+    if (!updatedUser) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    res
+      .status(200)
+      .json({ success: true, message: "Payment verified", user: updatedUser });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 };
 
@@ -920,4 +1054,5 @@ module.exports = {
   generateGstInvoice,
   capturePayment,
   verifyCapturedPayment,
+  paymentVerifeid,
 };

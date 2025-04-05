@@ -4,7 +4,7 @@ dotenv.config();
 const express = require("express");
 const app = express();
 const connectDB = require("./config/db");
-const port = 4000;
+const port = 3000;
 const serverType = "Web Backend";
 connectDB();
 const cookieParser = require("cookie-parser");
@@ -21,7 +21,7 @@ const corsOptions = {
     "https://ess-frontend-git-master-kriyona-infotechs-projects.vercel.app",
     "https://ees121.com",
     "https://www.ees121.com",
-    "http://localhost:5174",
+    "http://localhost:5173",
   ],
   allowedHeaders: ["Content-Type", "Authorization"],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],

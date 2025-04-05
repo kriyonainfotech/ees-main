@@ -60,15 +60,16 @@ const EditProfile = () => {
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-  useEffect(() => {
-    if (location?.state?.profilePic === defaultProfilePic) {
-      setIsEditable(true); // If the profile picture is default, allow editing
-    } else {
-      setProfilePic(location?.state?.profilePic);
-      setProfilePicPreview(location?.state?.profilePic);
-      setIsEditable(false); // If the profile picture is not default, disable editing
-    }
-  }, [location?.state]);
+  // profile pic upload thaya badd open karva nu che
+  // useEffect(() => {
+  //   if (location?.state?.profilePic === defaultProfilePic) {
+  //     setIsEditable(true); // If the profile picture is default, allow editing
+  //   } else {
+  //     setProfilePic(location?.state?.profilePic);
+  //     setProfilePicPreview(location?.state?.profilePic);
+  //     setIsEditable(false); // If the profile picture is not default, disable editing
+  //   }
+  // }, [location?.state]);
 
   const token = JSON.parse(localStorage.getItem("token"));
 
