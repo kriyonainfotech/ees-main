@@ -18,6 +18,7 @@ const RegisterNextPage = () => {
 
   const [businessCategory, setBusinessCategory] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [businessAddress, setBusinessAddress] = useState("");
   const [businessDetaile, setBusinessDetaile] = useState("");
@@ -40,7 +41,16 @@ const RegisterNextPage = () => {
   const selectCategory = (category) => {
     setBusinessCategory(category); // Set selected category
     setIsDropdownOpen(false); // Close dropdown
+    setSearchQuery(""); // reset search
+
   };
+
+  // const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
+
+  // const selectCategory = (categoryName) => {
+  //   setBusinessCategory(categoryName);
+  //   setIsDropdownOpen(false);
+  // };
 
   const fetchCategory = async () => {
     try {
@@ -75,6 +85,11 @@ const RegisterNextPage = () => {
     navigate("/RegisterAadhar", { state: fullData });
   };
 
+
+  const filteredCategories = categories.filter((cat) =>
+    cat.categoryName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <>
       <div className="container flex justify-center items-center min-h-screen">
@@ -107,22 +122,38 @@ const RegisterNextPage = () => {
                       <span className="text-gray-500">Select a category</span>
                     )}
                   </div>
+
                   {isDropdownOpen && (
-                    <ul className="absolute left-0 right-0 border bg-white mt-1 rounded-lg shadow-md max-h-40 overflow-y-auto">
-                      {categories.map((category, i) => (
-                        <li
-                          key={i}
-                          className={`cursor-pointer px-4 py-2 hover:bg-green-200 ${
-                            businessCategory === category.categoryName
-                              ? "bg-green-200"
-                              : ""
-                          }`}
-                          onClick={() => selectCategory(category.categoryName)}
-                        >
-                          {category.categoryName}
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="absolute left-0 right-0 border bg-white mt-1 rounded-lg shadow-md max-h-60 overflow-hidden z-10">
+                      {/* Search Input */}
+                      <div className="p-2">
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Search category..."
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-400"
+                        />
+                      </div>
+
+                      {/* Category List */}
+                      <ul className="max-h-40 overflow-y-auto">
+                        {filteredCategories.length > 0 ? (
+                          filteredCategories.map((category, i) => (
+                            <li
+                              key={i}
+                              className={`cursor-pointer px-4 py-2 hover:bg-green-200 ${businessCategory === category.categoryName ? "bg-green-200" : ""
+                                }`}
+                              onClick={() => selectCategory(category.categoryName)}
+                            >
+                              {category.categoryName}
+                            </li>
+                          ))
+                        ) : (
+                          <li className="px-4 py-2 text-gray-400">No results found</li>
+                        )}
+                      </ul>
+                    </div>
                   )}
                 </div>
 

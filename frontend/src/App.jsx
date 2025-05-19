@@ -61,6 +61,7 @@ export default function App() {
       });
     });
   }, []);
+
   useEffect(() => {
     // Simulate a data fetch
     setTimeout(() => {

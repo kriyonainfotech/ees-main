@@ -177,11 +177,10 @@ const Work = () => {
                 {requests.map((req) => (
                   <div key={req.id} className="receivReqBtn">
                     <Link
-                      className={`btn rounded-lg ${
-                        currentRequest === req.name
+                      className={`btn rounded-lg ${currentRequest === req.name
                           ? "btn-success text-white"
                           : "bg-none border-black text-black"
-                      }`}
+                        }`}
                       onClick={() => setCurrentRequest(req.name)}
                     >
                       {req.name}
@@ -192,11 +191,11 @@ const Work = () => {
 
               {/* Scrollable Requests */}
               <div
-                style={{
-                  maxHeight: "600px", // Adjust height as needed
-                  overflowY: "auto",
-                  paddingTop: "10px",
-                }}
+              // style={{
+              //   maxHeight: "600px", // Adjust height as needed
+              //   overflowY: "auto",
+              //   paddingTop: "10px",
+              // }}
               >
                 {loading ? (
                   <div

@@ -278,6 +278,8 @@ const Profile = () => {
 
   const [linkCopied, setLinkCopied] = useState(false);
   const location = useLocation();
+  const [rating, setRating] = useState(0);
+
   const [isKYCModalOpen, setIsKYCModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const navigate = useNavigate();
@@ -299,41 +301,21 @@ const Profile = () => {
     setTimeout(() => setLinkCopied(false), 2000);
   };
 
-  const renderStar = (ratings = [], maxRating = 10) => {
-    const ratingValue =
-      ratings.length > 0
-        ? ratings.reduce((acc, cur) => acc + cur, 0) / ratings.length
-        : 0;
-    const stars = [];
-    for (let i = 1; i <= maxRating; i++) {
-      stars.push(
-        <img
-          key={i}
-          src={i <= ratingValue ? starGold : starSilver}
-          alt={i <= ratingValue ? "Filled Star" : "Empty Star"}
-          width={15}
-        />
-      );
-    }
-    return stars;
-  };
-  const renderStars = (ratings = [], maxRating = 10) => {
-    const ratingValue =
-      ratings.length > 0
-        ? ratings.reduce((acc, cur) => acc + cur, 0) / ratings.length
-        : 0;
-    const stars = [];
-    for (let i = 1; i <= maxRating; i++) {
-      stars.push(
-        <img
-          key={i}
-          src={i <= ratingValue ? starGold : starSilver}
-          alt={i <= ratingValue ? "Filled Star" : "Empty Star"}
-          width={15}
-        />
-      );
-    }
-    return stars;
+  const renderStars = (
+    ratingValue = 0,
+    maxRating = 10,
+    isClickable = false
+  ) => {
+    return Array.from({ length: maxRating }, (_, i) => (
+      <img
+        key={i}
+        src={i < ratingValue ? starGold : starSilver}
+        alt={i < ratingValue ? "Filled Star" : "Empty Star"}
+        width={16}
+        className={`cursor-pointer ${isClickable ? "hover:opacity-80" : ""}`}
+        onClick={isClickable ? () => setRating(i + 1) : undefined}
+      />
+    ));
   };
 
   return (
@@ -378,12 +360,9 @@ const Profile = () => {
                     <div className="mt-3 space-y-2">
                       <div className="flex items-center gap-2">
                         <strong className="text-sm">User Rating:</strong>
-                        {user?.userRatings && (
+                        {typeof user?.userAverageRating === "number" && (
                           <div className="flex items-center">
-                            {renderStars(
-                              user?.userRatings.map((r) => r.rating),
-                              10
-                            )}
+                            {renderStars(Math.round(user?.userAverageRating || 0), 10)}
                             <span className="pl-2">
                               {user?.userAverageRating}.0
                             </span>
@@ -392,15 +371,14 @@ const Profile = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <strong className="text-sm">Provider Rating:</strong>
-                        {user?.providerRatings && (
+                        {user?.providerAverageRating && (
                           <div className="flex items-center">
-                            {renderStar(
-                              user?.providerRatings.map((r) => r.rating),
-                              10
-                            )}
+                            {renderStars(Math.round(user?.providerAverageRating || 0), 10)}
+
                             <span className="pl-2">
-                              {user?.providerAverageRating}.0
+                              {user?.providerAverageRating?.toFixed(1)}
                             </span>
+
                           </div>
                         )}
                       </div>
@@ -478,11 +456,10 @@ const Profile = () => {
                           <p>
                             <strong>Status:</strong>
                             <span
-                              className={`ml-2 text-sm ${
-                                user.ekyc.status === "pending"
-                                  ? "text-gray-600"
-                                  : "text-green-600"
-                              }`}
+                              className={`ml-2 text-sm ${user.ekyc.status === "pending"
+                                ? "text-gray-600"
+                                : "text-green-600"
+                                }`}
                             >
                               {user.ekyc.status === "pending"
                                 ? "Pending (Your KYC Details are waiting for admin's approval)"
@@ -625,11 +602,10 @@ const Profile = () => {
                         Status:{" "}
                       </span>
                       <span
-                        className={`font-semibold ${
-                          user?.userstatus === "available"
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}
+                        className={`font-semibold ${user?.userstatus === "available"
+                          ? "text-green-600"
+                          : "text-red-600"
+                          }`}
                       >
                         {user?.userstatus}
                       </span>

@@ -148,7 +148,7 @@ const RegisterAadhar = () => {
         navigate("/login");
       }
     } catch (error) {
-      console.error("Registration error:", error);
+      console.log("Registration error:", error);
 
       if (error.response?.data) {
         const errorData = error.response.data;

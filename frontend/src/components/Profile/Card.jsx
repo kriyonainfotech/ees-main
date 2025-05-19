@@ -20,6 +20,7 @@ const Card = () => {
   const { user } = useContext(UserContext);
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState(null);
+  const [rating, setRating] = useState(0);
   const [linkCopied, setLinkCopied] = useState(false);
 
   const referralLink = `${window.location.origin}/register?referralCode=${user?._id}`;
@@ -69,52 +70,22 @@ const Card = () => {
 
   // Render stars for the rating
 
-  const renderStar = (ratings = [], maxRating = 10) => {
-    const ratingValue =
-      ratings.length > 0
-        ? ratings.reduce((acc, cur) => acc + cur, 0) / ratings.length
-        : 0;
-    const stars = [];
-    for (let i = 1; i <= maxRating; i++) {
-      stars.push(
-        <img
-          key={i}
-          src={i <= ratingValue ? starGold : starSilver}
-          alt={i <= ratingValue ? "Filled Star" : "Empty Star"}
-          width={15}
-        />
-      );
-    }
-    return stars;
+  const renderStars = (
+    ratingValue = 0,
+    maxRating = 10,
+    isClickable = false
+  ) => {
+    return Array.from({ length: maxRating }, (_, i) => (
+      <img
+        key={i}
+        src={i < ratingValue ? starGold : starSilver}
+        alt={i < ratingValue ? "Filled Star" : "Empty Star"}
+        width={16}
+        className={`cursor-pointer ${isClickable ? "hover:opacity-80" : ""}`}
+        onClick={isClickable ? () => setRating(i + 1) : undefined}
+      />
+    ));
   };
-  const renderStars = (ratings = [], maxRating = 10) => {
-    const ratingValue =
-      ratings.length > 0
-        ? ratings.reduce((acc, cur) => acc + cur, 0) / ratings.length
-        : 0;
-    const stars = [];
-    for (let i = 1; i <= maxRating; i++) {
-      stars.push(
-        <img
-          key={i}
-          src={i <= ratingValue ? starGold : starSilver}
-          alt={i <= ratingValue ? "Filled Star" : "Empty Star"}
-          width={15}
-        />
-      );
-    }
-    return stars;
-  };
-
-  // Handle user rating display
-  const userRating = user?.userRatings?.length
-    ? user?.userRatings.reduce((acc, curr) => acc + curr.rating, 0) /
-      user?.userRatings.length
-    : 0; // Average rating if available, otherwise default to 0.
-  const ProviderRating = user?.providerRatings?.length
-    ? user?.providerRatings.reduce((acc, curr) => acc + curr.rating, 0) /
-      user?.providerRatings.length
-    : 0; // Average rating if available, otherwise default to 0.
 
   // Add new states for image zoom modal
   const [showImageModal, setShowImageModal] = useState(false);
@@ -350,12 +321,7 @@ const Card = () => {
                         <div>
                           {user?.providerRatings ? (
                             <div className=" d-flex align-items-center">
-                              {renderStar(
-                                user?.providerRatings.map((r) => {
-                                  return r.rating;
-                                }),
-                                10
-                              )}
+                              {renderStars(user?.providerAverageRating || 0, 10)}
                               <span className="ps-2 ">
                                 {user?.providerAverageRating}
                               </span>
@@ -422,9 +388,8 @@ const Card = () => {
                         onChange={handleCheckboxChange}
                       />
                       <span
-                        className={`ms-2 ${
-                          isAvailable ? "text-success" : "text-danger"
-                        }`}
+                        className={`ms-2 ${isAvailable ? "text-success" : "text-danger"
+                          }`}
                       >
                         {isAvailable ? "Available" : "Unavailable"}
                       </span>
@@ -443,14 +408,10 @@ const Card = () => {
                       <div>
                         {user?.userRatings ? (
                           <div className=" d-flex align-items-center">
-                            {renderStars(
-                              user?.userRatings.map((r) => {
-                                return r.rating;
-                              }),
-                              10
-                            )}
+                            {renderStars(Math.round(user?.userAverageRating || 0), 10)}
+
                             <span className="ps-2 ">
-                              {user?.userAverageRating}
+                              {user?.userAverageRating?.toFixed(1)}
                             </span>
                             {/* <FaStar className= {` ${Usersdata.ratings ? "d-flex" : "d-none"}`}  /> */}
                           </div>
@@ -464,14 +425,10 @@ const Card = () => {
                       <div>
                         {user?.providerRatings ? (
                           <div className=" d-flex align-items-center">
-                            {renderStar(
-                              user?.providerRatings.map((r) => {
-                                return r.rating;
-                              }),
-                              10
-                            )}
+                            {renderStars(Math.round(user?.providerAverageRating || 0), 10)}
+
                             <span className="ps-2 ">
-                              {user?.providerAverageRating}
+                              {user?.providerAverageRating?.toFixed(1)}
                             </span>
                             {/* <FaStar className= {` ${Usersdata.ratings ? "d-flex" : "d-none"}`}  /> */}
                           </div>

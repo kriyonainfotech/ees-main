@@ -6,7 +6,13 @@ const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const { v4: uuidv4 } = require("uuid");
 const { uploadToS3 } = require("../services/authService");
-const cloudinary = require("cloudinary").v2;
+const AWS = require("aws-sdk");
+
+const s3 = new AWS.S3({
+  region: process.env.AWS_REGION,
+  accessKeyId: process.env.AWS_ACCESS_KEY,
+  secretAccessKey: process.env.AWS_SECRET_KEY,
+});
 
 const {
   validateFiles,
@@ -29,6 +35,26 @@ const getPublicIdFromUrl = (url) => {
     return `${match[1]}/${match[2]}`; // captures the folder and file name without versioning or extension
   }
   return null;
+};
+
+const deleteS3File = async (fileUrl) => {
+  if (!fileUrl) return;
+
+  // Extract the S3 object key from the full URL
+  const url = new URL(fileUrl);
+  const key = decodeURIComponent(url.pathname.slice(1)); // removes leading "/"
+
+  const params = {
+    Bucket: process.env.AWS_BUCKET_NAME,
+    Key: key,
+  };
+
+  try {
+    await s3.deleteObject(params).promise();
+    console.log(`[INFO] 🗑️ Deleted from S3: ${key}`);
+  } catch (err) {
+    console.error(`[ERROR] ❌ Failed to delete from S3: ${key}`, err);
+  }
 };
 
 // const registerUser = async (req, res) => {
@@ -1173,7 +1199,6 @@ const updateProfileMobile = async (req, res) => {
   }
 };
 
-
 // const deleteUser = async (req, res) => {
 //   try {
 //     const userId = req.body.id;
@@ -1285,21 +1310,31 @@ const deleteUser = async (req, res) => {
       console.log("[INFO] ✅ Removed user from referrer’s referral list");
     }
 
-    // Function to delete Cloudinary images
-    const deleteCloudinaryImage = async (imageUrl) => {
-      if (imageUrl) {
-        const publicId = imageUrl.split("/").slice(-2).join("/").split(".")[0]; // Extract public ID
-        await cloudinary.uploader.destroy(publicId);
-      }
-    };
+    const userImages = [];
 
-    // Delete user's personal images from Cloudinary
-    const userImages = [user.profilePic, user.frontAadhar, user.backAadhar];
+    if (user.profilePic) userImages.push(user.profilePic);
+    if (user.frontAadhar) userImages.push(user.frontAadhar);
+    if (user.backAadhar) userImages.push(user.backAadhar);
+
+    if (user.ekyc) {
+      console.log("[INFO] 🔍 User has eKYC, deleting KYC images...");
+
+      if (user.ekyc.panCardfront) userImages.push(user.ekyc.panCardfront);
+      if (user.ekyc.panCardback) userImages.push(user.ekyc.panCardback);
+      if (user.ekyc.bankProof) userImages.push(user.ekyc.bankProof);
+
+      await KYCModel.findByIdAndDelete(user.ekyc._id);
+      console.log("[INFO] ✅ Deleted user's KYC record");
+    }
 
     // Delete user's KYC images if they have eKYC
     if (user.ekyc) {
       console.log("[INFO] 🔍 User has eKYC, deleting KYC images...");
-      userImages.push(user.ekyc.panCardfront, user.ekyc.panCardback, user.ekyc.bankProof);
+      userImages.push(
+        user.ekyc.panCardfront,
+        user.ekyc.panCardback,
+        user.ekyc.bankProof
+      );
 
       // Delete the KYC record
       await KYCModel.findByIdAndDelete(user.ekyc._id);
@@ -1307,9 +1342,9 @@ const deleteUser = async (req, res) => {
     }
 
     // Delete all collected images from Cloudinary
-    await Promise.all(userImages.map((image) => deleteCloudinaryImage(image)));
+    await Promise.all(userImages.map((key) => deleteS3File(key)));
 
-    console.log("[INFO] ✅ Deleted all user's images from Cloudinary");
+    console.log("[INFO] ✅ Deleted all user's images from S3");
 
     // Finally, delete user
     await UserModel.findByIdAndDelete(userId);
@@ -1321,7 +1356,7 @@ const deleteUser = async (req, res) => {
       message: "User deleted successfully",
     });
   } catch (error) {
-    console.error("[ERROR] ❌", error);
+    console.log("[ERROR] ❌", error);
     return res.status(500).send({
       success: false,
       message: "An error occurred while deleting the user",
@@ -1482,7 +1517,7 @@ const setUserStatus = async (req, res) => {
   }
 };
 
-const setUserStatusMobile = async (req, res) => { 
+const setUserStatusMobile = async (req, res) => {
   try {
     console.log("🔍 Received request to update user status");
 
@@ -1542,7 +1577,6 @@ const setUserStatusMobile = async (req, res) => {
     });
   }
 };
-
 
 const updateRoleByEmail = async (req, res) => {
   try {

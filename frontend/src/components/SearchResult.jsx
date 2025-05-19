@@ -19,20 +19,23 @@ const SearchResult = ({ Usersdata, token }) => {
   const [loading, setLoading] = useState(false);
   const [allRequest, setAllRequest] = useState([]);
   const [message, setMessage] = useState("I NEED YOUR SERVICE");
+  const [rating, setRating] = useState(0);
   // const [hasPendingOrAcceptedRequest, setHasPendingOrAcceptedRequest] = useState(false);
   const navigate = useNavigate();
 
-  const renderStars = (ratings = [], maxRating = 10) => {
-    const ratingValue =
-      ratings.length > 0
-        ? ratings.reduce((acc, cur) => acc + cur, 0) / ratings.length
-        : 0;
+  const renderStars = (
+    ratingValue = 0,
+    maxRating = 10,
+    isClickable = false
+  ) => {
     return Array.from({ length: maxRating }, (_, i) => (
       <img
         key={i}
         src={i < ratingValue ? starGold : starSilver}
         alt={i < ratingValue ? "Filled Star" : "Empty Star"}
-        width={15}
+        width={16}
+        className={`cursor-pointer ${isClickable ? "hover:opacity-80" : ""}`}
+        onClick={isClickable ? () => setRating(i + 1) : undefined}
       />
     ));
   };
@@ -154,11 +157,10 @@ const SearchResult = ({ Usersdata, token }) => {
             <div className="absolute top-3 right-3">
               <span
                 className={`px-3 py-1 shadow-md rounded-full text-xs font-medium 
-          ${
-            Usersdata?.userstatus === "available"
-              ? "bg-green-600 text-white"
-              : "bg-red-600 text-white"
-          }`}
+          ${Usersdata?.userstatus === "available"
+                    ? "bg-green-600 text-white"
+                    : "bg-red-600 text-white"
+                  }`}
               >
                 {Usersdata?.userstatus}
               </span>
@@ -186,10 +188,7 @@ const SearchResult = ({ Usersdata, token }) => {
               <p className="text-xs font-medium flex justify-center items-center">
                 User :{" "}
                 <span className="flex ">
-                  {renderStars(
-                    Usersdata.userRatings.map((r) => r.rating),
-                    10
-                  )}
+                  {renderStars(Usersdata?.userAverageRating || 0, 10)}
                 </span>
               </p>
               <span className="ml-2 text-sm font-medium">
@@ -203,10 +202,7 @@ const SearchResult = ({ Usersdata, token }) => {
               <p className="text-xs font-medium flex justify-center items-center">
                 Provider :
                 <span className="flex ">
-                  {renderStars(
-                    Usersdata.providerRatings.map((r) => r.rating),
-                    10
-                  )}
+                  {renderStars(Usersdata?.providerAverageRating || 0, 10)}
                 </span>
               </p>
               <span className="ml-2 text-sm font-medium">
@@ -240,7 +236,7 @@ const SearchResult = ({ Usersdata, token }) => {
                     className={`font-semibold px-4 py-2 w-full rounded-md shadow-md transition duration-200 bg-blue-600 text-white hover:bg-blue-700 `}
                     data-bs-toggle="modal"
                     data-bs-target={`#modal-${Usersdata._id}`}
-                    // disabled={hasPendingOrAcceptedRequest}
+                  // disabled={hasPendingOrAcceptedRequest}
                   >
                     Send Request
                   </button>

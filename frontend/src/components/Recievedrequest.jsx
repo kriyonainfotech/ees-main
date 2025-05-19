@@ -157,7 +157,7 @@ const ReceivedRequest = ({ receivedRequest, setReceivedRequest, user }) => {
                 console.error("Error deleting request:", error);
                 toast.error(
                   error.response?.data?.message ||
-                    "An error occurred while deleting the request."
+                  "An error occurred while deleting the request."
                 );
               }
             }}
@@ -188,29 +188,28 @@ const ReceivedRequest = ({ receivedRequest, setReceivedRequest, user }) => {
                   request.status === "cancelled"
                     ? "Sender has cancelled the request."
                     : request.status === "rejected"
-                    ? "Receiver has rejected the request."
-                    : request.status === "completed"
-                    ? "Request completed, rate the user."
-                    : request.status === "accepted"
-                    ? "Request accepted, contact the user."
-                    : ""
+                      ? "Receiver has rejected the request."
+                      : request.status === "completed"
+                        ? "Request completed, rate the user."
+                        : request.status === "accepted"
+                          ? "Request accepted, contact the user."
+                          : ""
                 }
                 className={`bg-white rounded-xl border  overflow-hidden`}
               >
                 <div className="relative">
                   <img
-                    className="w-full h-[250px] md:h-[400px] object-cover object-top"
+                    className="w-full h-[250px] md:h-[350px] object-cover object-top"
                     src={request.profilePic || ProfileIcon}
                     alt="Profile"
                   />
                   <span
-                    className={`absolute top-4 right-4 py-2 px-3 text-xs rounded-full font-semibold text-white ${
-                      request.status === "accepted"
-                        ? "bg-blue-600"
-                        : request.status === "completed"
+                    className={`absolute top-4 right-4 py-2 px-3 text-xs rounded-full font-semibold text-white ${request.status === "accepted"
+                      ? "bg-blue-600"
+                      : request.status === "completed"
                         ? "bg-green-600"
                         : "bg-yellow-500"
-                    }`}
+                      }`}
                   >
                     {request.status || "Pending"}
                   </span>
@@ -310,24 +309,35 @@ const ReceivedRequest = ({ receivedRequest, setReceivedRequest, user }) => {
                     {request.name || "Unknown User"}
                   </h4>
 
-                  <div className="flex  flex-col sm:flex-row justify-between items-center">
-                    <p className="text-orange-600 text-sm font-medium capitalize w-full block mt-2">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-2">
+                    <p className="text-orange-600 text-sm font-medium capitalize">
                       {request.businessCategory?.join(", ") || "N/A"}
                     </p>
-                    <p className="text-xs text-gray-500 w-full block mt-1">
+                    <p className="text-xs text-gray-500">
                       {format(new Date(request.date), "PPpp")}
                     </p>
                   </div>
 
-                  <div className="flex justify-between items-center  mt-2">
+                  <div className="flex flex-wrap items-center mt-2 text-sm">
+                    <span className="text-gray-800 text-sm  ">
+                      Provider Rating:
+                    </span>
+                    <div className="flex gap-1 overflow-auto mt-1">
+                      {renderStars(request?.providerRatingbySender?.value || 0, 10)}
+                    </div>
+                    <span className="text-gray-700 block mt-1 ps-2">
+                      {request?.providerRatingbySender?.value || 0}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center mt-2 text-sm">
                     <span className="text-gray-800 text-sm  ">
                       User Rating:
                     </span>
-                    <div className="flex gap-1 overflow-auto  mt-1">
-                      {renderStars(request?.userrating?.value || 0, 10)}
+                    <div className="flex gap-1 overflow-auto mt-1">
+                      {renderStars(request?.userRatingbyprovider?.value || 0, 10)}
                     </div>
-                    <span className="text-gray-700 block mt-1">
-                      {request?.userrating?.value || 0}
+                    <span className="text-gray-700 block mt-1 ps-2">
+                      {request?.userRatingbyprovider?.value || 0}
                     </span>
                   </div>
 
@@ -364,12 +374,12 @@ const ReceivedRequest = ({ receivedRequest, setReceivedRequest, user }) => {
                       <>
                         <a
                           href={`tel:${request.phone}`}
-                          className="w-full md:flex-1 flex items-center justify-center gap-2 p-2 text-sm text-white bg-green-600 rounded-lg hover:bg-green-700 transition"
+                          className="w-full sm:flex-1 flex items-center justify-center gap-2 p-2 text-sm text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
                         >
                           <FaPhone /> Contact Now
                         </a>
                         <button
-                          className="p-2 text-sm w-full md:flex-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                          className="w-full sm:w-auto p-2 bg-blue-600 text-sm text-white rounded-lg hover:bg-blue-700 transition"
                           onClick={() =>
                             handleAction(
                               request.senderId,

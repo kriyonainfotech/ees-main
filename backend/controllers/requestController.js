@@ -1,6 +1,7 @@
 const User = require("../model/user"); // Update the path as needed
 const mongoose = require("mongoose");
 const { sendNotification } = require("./sendController");
+const Request = require("../model/request");
 
 const sendRequestNotification = async (userId, title, message) => {
   try {
@@ -35,76 +36,100 @@ const sentRequest = async (req, res) => {
       });
     }
 
-    // ✅ Generate a common requestId for both sender & receiver
-
+    // old logic ----------------------------------------------------------------------------------
     // Fetch sender and receiver details
-    const sender = await User.findById(senderId).select(
-      "_id name sended_requests"
-    );
+    // const sender = await User.findById(senderId).select(
+    //   "_id name sended_requests"
+    // );
+    // const receiver = await User.findById(receiverId).select(
+    //   "_id name received_requests fcmToken"
+    // );
+
+    // if (!sender || !receiver) {
+    //   return res.status(404).send({
+    //     success: false,
+    //     message: "Sender or receiver not found.",
+    //   });
+    // }
+
+    // console.log("📌 Sender:", sender);
+    // console.log("📌 Receiver:", receiver);
+
+    // // Ensure sender & receiver requests arrays exist
+    // sender.sended_requests = sender.sended_requests || [];
+    // receiver.received_requests = receiver.received_requests || [];
+
+    // // ✅ Check if a pending request already exists (using requestId)
+    // const existingSentRequest = sender.sended_requests.find(
+    //   (req) =>
+    //     req.user &&
+    //     req.user.toString() === receiverId &&
+    //     req.status === "pending"
+    // );
+
+    // if (existingSentRequest) {
+    //   console.log("❌ Already sent request.");
+    //   return res.status(400).send({
+    //     success: false,
+    //     message: "Already sent request.",
+    //   });
+    // }
+
+    // console.log("✅ No existing request found. Proceeding to send request...");
+    // // ✅ Generate a common requestId
+    // const requestId = new mongoose.Types.ObjectId();
+    // console.log(requestId, "requestId");
+
+    // if (requestId) {
+    //   sender.sended_requests.push({
+    //     requestId: requestId, // Convert to string
+    //     user: receiverId,
+    //     status: "pending",
+    //     date: new Date(),
+    //   });
+
+    //   receiver.received_requests.push({
+    //     requestId: requestId,
+    //     user: senderId,
+    //     status: "pending",
+    //     date: new Date(),
+    //   });
+    // } else {
+    //   console.error("❌ requestId is undefined!");
+    //   return res.status(500).send({
+    //     success: false,
+    //     message: "Error generating request ID.",
+    //   });
+    // }
+
+    // // ✅ Save both users
+    // await sender.save();
+    // await receiver.save();
+
+    // new logic----------------------------------------------------------------------------------
+    const existingRequest = await Request.findOne({
+      sender: senderId,
+      receiver: receiverId,
+      status: "pending",
+    });
+    if (existingRequest) {
+      return res
+        .status(400)
+        .send({ success: false, message: "Already sent request." });
+    }
+    // Create new Request document
+    const newRequest = await Request.create({
+      sender: senderId,
+      receiver: receiverId,
+      status: "pending",
+      date: new Date(),
+    });
+
+    // Fetch sender and receiver details for notification
+    const sender = await User.findById(senderId).select("_id name");
     const receiver = await User.findById(receiverId).select(
-      "_id name received_requests fcmToken"
+      "_id name fcmToken"
     );
-
-    if (!sender || !receiver) {
-      return res.status(404).send({
-        success: false,
-        message: "Sender or receiver not found.",
-      });
-    }
-
-    console.log("📌 Sender:", sender);
-    console.log("📌 Receiver:", receiver);
-
-    // Ensure sender & receiver requests arrays exist
-    sender.sended_requests = sender.sended_requests || [];
-    receiver.received_requests = receiver.received_requests || [];
-
-    // ✅ Check if a pending request already exists (using requestId)
-    const existingSentRequest = sender.sended_requests.find(
-      (req) =>
-        req.user &&
-        req.user.toString() === receiverId &&
-        req.status === "pending"
-    );
-
-    if (existingSentRequest) {
-      console.log("❌ Already sent request.");
-      return res.status(400).send({
-        success: false,
-        message: "Already sent request.",
-      });
-    }
-
-    console.log("✅ No existing request found. Proceeding to send request...");
-    // ✅ Generate a common requestId
-    const requestId = new mongoose.Types.ObjectId();
-    console.log(requestId, "requestId");
-
-    if (requestId) {
-      sender.sended_requests.push({
-        requestId: requestId, // Convert to string
-        user: receiverId,
-        status: "pending",
-        date: new Date(),
-      });
-
-      receiver.received_requests.push({
-        requestId: requestId,
-        user: senderId,
-        status: "pending",
-        date: new Date(),
-      });
-    } else {
-      console.error("❌ requestId is undefined!");
-      return res.status(500).send({
-        success: false,
-        message: "Error generating request ID.",
-      });
-    }
-
-    // ✅ Save both users
-    await sender.save();
-    await receiver.save();
 
     console.log("📌 Sending notification...");
     const Notification = {
@@ -113,7 +138,7 @@ const sentRequest = async (req, res) => {
       fcmToken: receiver.fcmToken,
       title: "🚀 New Work Request!",
       message: `🔔 ${sender.name} has sent you a work request! 📩`,
-      receiverId: receiver._id, // Include receiver's ID to store the notification
+      receiverId: receiver._id,
     };
     console.log("🔵 Notification:", Notification);
     await sendNotification(Notification);
@@ -123,7 +148,7 @@ const sentRequest = async (req, res) => {
       message: "Request sent successfully.",
       sender: { _id: sender._id, name: sender.name },
       receiver: { _id: receiver._id, name: receiver.name },
-      requestId, // Return requestId for tracking
+      requestId: newRequest._id,
     });
   } catch (error) {
     console.error("❌ Error in request process:", error);
@@ -257,7 +282,6 @@ const sentRequestMobile = async (req, res) => {
     console.log("🔵 Notification:", Notification);
     await sendNotification(Notification);
 
-
     return res.status(200).send({
       success: true,
       message: "Request sent successfully.",
@@ -289,47 +313,77 @@ const getSentRequests = async (req, res) => {
 
     console.log(`🔎 [INFO] Fetching sent requests for userId: ${userId}`);
 
-    const user = await User.findById(userId)
-      .select("sended_requests")
+    //old logic------------------------------------------------------------------------------------------
+    // const user = await User.findById(userId)
+    //   .select("sended_requests")
+    //   .populate({
+    //     path: "sended_requests.user",
+    //     select:
+    //       "name phone email profilePic address businessCategory businessName businessAddress fcmToken userstatus averageRating ratings providerAverageRating providerRatings userAverageRating userRatings businessDetaile",
+    //     options: { lean: true },
+    //   })
+    //   .lean();
+    // if (!user) {
+    //   console.warn(`❌ [WARN] User with ID ${userId} not found.`);
+    //   return res
+    //     .status(404)
+    //     .json({ success: false, message: "🙅‍♂️ User not found." });
+    // }
+
+    // const sendedRequests =
+    //   user.sended_requests?.map((req) => ({
+    //     requestId: req.requestId, // ✅ Include requestId
+    //     receiverId: req.user?._id,
+    //     name: req.user?.name,
+    //     phone: req.user?.phone,
+    //     email: req.user?.email,
+    //     profilePic: req.user?.profilePic,
+    //     businessCategory: req.user?.businessCategory,
+    //     businessName: req.user?.businessName,
+    //     businessAddress: req.user?.businessAddress,
+    //     sended_requests: req.user?.sended_requests,
+    //     status: req.status,
+    //     date: req.date,
+    //     givenByreceiverRating: req.givenByreceiverRating,
+    //     providerrating: req.providerrating,
+    //   })) || [];
+
+    //new logic------------------------------------------------------------------------------------------
+    // Fetch Requests where user is the sender
+    const sentRequests = await Request.find({ sender: userId })
       .populate({
-        path: "sended_requests.user",
+        path: "receiver",
         select:
           "name phone email profilePic address businessCategory businessName businessAddress fcmToken userstatus averageRating ratings providerAverageRating providerRatings userAverageRating userRatings businessDetaile",
         options: { lean: true },
       })
       .lean();
-    if (!user) {
-      console.warn(`❌ [WARN] User with ID ${userId} not found.`);
-      return res
-        .status(404)
-        .json({ success: false, message: "🙅‍♂️ User not found." });
-    }
 
-    const sendedRequests =
-      user.sended_requests?.map((req) => ({
-        requestId: req.requestId, // ✅ Include requestId
-        receiverId: req.user?._id,
-        name: req.user?.name,
-        phone: req.user?.phone,
-        email: req.user?.email,
-        profilePic: req.user?.profilePic,
-        businessCategory: req.user?.businessCategory,
-        businessName: req.user?.businessName,
-        businessAddress: req.user?.businessAddress,
-        sended_requests: req.user?.sended_requests,
-        status: req.status,
-        date: req.date,
-        givenByreceiverRating:req.givenByreceiverRating,
-        providerrating: req.providerrating,
-      })) || [];
+    const formattedRequests = sentRequests.map((req) => ({
+      requestId: req._id,
+      receiverId: req.receiver?._id,
+      name: req.receiver?.name,
+      phone: req.receiver?.phone,
+      email: req.receiver?.email,
+      profilePic: req.receiver?.profilePic,
+      businessCategory: req.receiver?.businessCategory,
+      businessName: req.receiver?.businessName,
+      businessAddress: req.receiver?.businessAddress,
+      status: req.status,
+      date: req.date,
+      userRatingbyprovider: req.userRatingbyprovider, // from Request model
+      providerRatingbySender: req.providerRatingbySender, // from Request model
+    }));
 
-    console.log(`✅ [SUCCESS] Retrieved ${sendedRequests.length} sent requests.`);
+    console.log(
+      `✅ [SUCCESS] Retrieved ${formattedRequests.length} sent requests.`
+    );
 
     return res.status(200).json({
       success: true,
       message: "📩 Sent requests retrieved successfully!",
-      sendedRequests,
-      user,
+      sendedRequests: formattedRequests,
+      // user,
     });
   } catch (error) {
     console.error("❌ [ERROR] Failed to fetch sent requests:", error);
@@ -355,50 +409,84 @@ const getReceivedRequests = async (req, res) => {
 
     console.log(`🔎 [INFO] Fetching received requests for userId: ${userId}`);
 
-    const user = await User.findById(userId)
-      .select("received_requests")
+    // old logic------------------------------------------------------------------------------------------------
+    // const user = await User.findById(userId)
+    //   .select("received_requests")
+    //   .populate({
+    //     path: "received_requests.user",
+    //     select:
+    //       "name phone email profilePic address businessCategory businessName businessAddress fcmToken userstatus providerAverageRating userAverageRating  businessDetaile userRating",
+    //     options: { lean: true },
+    //   })
+    //   .lean();
+    // // console.log(user, "user");
+    // if (!user) {
+    //   console.warn(`❌ [WARN] User with ID ${userId} not found.`);
+    //   return res
+    //     .status(404)
+    //     .json({ success: false, message: "🙅‍♂️ User not found." });
+    // }
+
+    // const receivedRequests =
+    //   user.received_requests?.map((req) => ({
+    //     requestId: req.requestId, // ✅ Include requestId
+    //     senderId: req.user?._id,
+    //     name: req.user?.name,
+    //     phone: req.user?.phone,
+    //     email: req.user?.email,
+    //     profilePic: req.user?.profilePic,
+    //     address: req.user?.address,
+    //     businessCategory: req.user?.businessCategory,
+    //     businessName: req.user?.businessName,
+    //     businessAddress: req.user?.businessAddress,
+    //     fcmToken: req.user?.fcmToken,
+    //     userstatus: req.user?.userstatus,
+    //     providerAverageRating: req.user?.providerAverageRating,
+    //     userAverageRating: req.user?.userAverageRating,
+    //     businessDetaile: req.user?.businessDetaile,
+    //     received_requests: req.user?.received_requests,
+    //     status: req.status,
+    //     date: req.date,
+    //     givenBysenderRating: req.givenBysenderRating,
+    //     userrating: req.userrating,
+    //   })) || [];
+
+    // Find Requests where the user is the receiver
+
+    // new logic---------------------------------------------------------------------------------------------------
+    const receivedRequestsData = await Request.find({ receiver: userId })
       .populate({
-        path: "received_requests.user",
+        path: "sender",
         select:
-          "name phone email profilePic address businessCategory businessName businessAddress fcmToken userstatus providerAverageRating userAverageRating  businessDetaile userRating",
+          "name phone email profilePic address businessCategory businessName businessAddress fcmToken userstatus providerAverageRating userAverageRating businessDetaile userRating",
         options: { lean: true },
       })
       .lean();
-    // console.log(user, "user");
-    if (!user) {
-      console.warn(`❌ [WARN] User with ID ${userId} not found.`);
-      return res
-        .status(404)
-        .json({ success: false, message: "🙅‍♂️ User not found." });
-    }
 
-    const receivedRequests =
-      user.received_requests?.map((req) => ({
-        requestId: req.requestId, // ✅ Include requestId
-        senderId: req.user?._id,
-        name: req.user?.name,
-        phone: req.user?.phone,
-        email: req.user?.email,
-        profilePic: req.user?.profilePic,
-        address: req.user?.address,
-        businessCategory: req.user?.businessCategory,
-        businessName: req.user?.businessName,
-        businessAddress: req.user?.businessAddress,
-        fcmToken: req.user?.fcmToken,
-        userstatus: req.user?.userstatus,
-        providerAverageRating: req.user?.providerAverageRating,
-        userAverageRating: req.user?.userAverageRating,
-        businessDetaile: req.user?.businessDetaile,
-        received_requests: req.user?.received_requests,
-        status: req.status,
-        date: req.date,
-        givenBysenderRating:req.givenBysenderRating,
-        userrating: req.userrating,
-      })) || [];
+    // Map to a clean response format
+    const receivedRequests = receivedRequestsData.map((req) => ({
+      requestId: req._id,
+      senderId: req.sender?._id,
+      name: req.sender?.name,
+      phone: req.sender?.phone,
+      email: req.sender?.email,
+      profilePic: req.sender?.profilePic,
+      address: req.sender?.address,
+      businessCategory: req.sender?.businessCategory,
+      businessName: req.sender?.businessName,
+      businessAddress: req.sender?.businessAddress,
+      fcmToken: req.sender?.fcmToken,
+      userstatus: req.sender?.userstatus,
+      providerAverageRating: req.sender?.providerAverageRating,
+      userAverageRating: req.sender?.userAverageRating,
+      businessDetaile: req.sender?.businessDetaile,
+      status: req.status,
+      date: req.date,
+      userRatingbyprovider: req.userRatingbyprovider, // from Request model
+      providerRatingbySender: req.providerRatingbySender, // from Request model
+    }));
 
-    console.log(
-      // `✅ [SUCCESS] Retrieved ${receivedRequests.length} received requests.`
-    );
+    console.log("");
     return res.status(200).json({
       success: true,
       message: "📥 Received requests retrieved successfully!",
@@ -524,7 +612,7 @@ const deleteRequest = async (req, res) => {
 const updateRequestStatus = async (req, res) => {
   try {
     const { requestId, status } = req.body;
-    const userId = req.user.id;
+    const userId = req.user?.id;
 
     console.log(
       `📩 User(${userId}) updating request(${requestId}) to: ${status}`
@@ -537,125 +625,190 @@ const updateRequestStatus = async (req, res) => {
       });
     }
 
-    const user = await User.findOne({
-      $or: [
-        { _id: userId, "sended_requests.requestId": requestId },
-        { _id: userId, "received_requests.requestId": requestId },
-      ],
-    });
+    console.log(
+      `User(${userId}) updating request(${requestId}) to status: ${status}`
+    );
+    // old logic -------------------------------------------------------------------------------------------------------
+    // const user = await User.findOne({
+    //   $or: [
+    //     { _id: userId, "sended_requests.requestId": requestId },
+    //     { _id: userId, "received_requests.requestId": requestId },
+    //   ],
+    // });
 
-    if (!user) {
+    // if (!user) {
+    //   return res
+    //     .status(404)
+    //     .json({ success: false, message: "❌ Request not found!" });
+    // }
+
+    // if (!user || !user.sended_requests || !user.received_requests) {
+    //   console.error("User or request lists are undefined");
+    //   return res
+    //     .status(400)
+    //     .json({ success: false, message: "Invalid user data" });
+    // }
+
+    // const isSender = user.sended_requests.some(
+    //   (r) => r.requestId && r.requestId.toString() === requestId
+    // );
+    // console.log(isSender, "is sender");
+
+    // const isReceiver = user.received_requests.some(
+    //   (r) => r.requestId && r.requestId.toString() === requestId
+    // );
+
+    // console.log(isReceiver, "is receiver");
+
+    // if (!isSender && !isReceiver) {
+    //   return res.status(404).json({
+    //     success: false,
+    //     message: "❌ Request not found in user data!",
+    //   });
+    // }
+
+    // // 🚫 Prevent changing to the same status
+    // const requestField = isSender ? "sended_requests" : "received_requests";
+    // console.log(
+    //   requestField,
+    //   "request field============================================"
+    // );
+    // const request = user[requestField].find(
+    //   (r) => r.requestId.toString() === requestId
+    // );
+
+    // if (request.status === status) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: `⚠️ Request is already '${status}'!`,
+    //   });
+    // }
+
+    // console.log(
+    //   request,
+    //   "request--------------------------------------------------------"
+    // );
+
+    // let updateQueries = [];
+
+    // if (status === "cancelled") {
+    //   updateQueries = [
+    //     User.updateOne(
+    //       { _id: request.user, "received_requests.requestId": requestId },
+    //       { $set: { "received_requests.$.status": status } }
+    //     ),
+    //     User.updateOne(
+    //       { "sended_requests.requestId": requestId },
+    //       { $set: { "sended_requests.$.status": status } }
+    //     ),
+    //   ];
+    // } else if (status === "rejected" || status === "accepted") {
+    //   updateQueries = [
+    //     // ✅ Update receiver's received_requests (user is rejecting the request)
+    //     User.updateOne(
+    //       { _id: userId, "received_requests.requestId": requestId },
+    //       { $set: { "received_requests.$.status": status } }
+    //     ),
+    //     // ✅ Update sender's sended_requests (their request is being rejected)
+    //     User.updateOne(
+    //       { _id: request.user, "sended_requests.requestId": requestId },
+    //       { $set: { "sended_requests.$.status": status } }
+    //     ),
+    //   ];
+    // } else if (status === "completed") {
+    //   // ✅ Update only the user making the request when completed
+    //   updateQueries = [
+    //     User.updateOne(
+    //       { _id: userId, [`${requestField}.requestId`]: requestId },
+    //       { $set: { [`${requestField}.$.status`]: status } }
+    //     ),
+    //   ];
+    // }
+
+    // console.log(
+    //   updateQueries,
+    //   "uq---------------------------------------------------------------------"
+    // );
+    // // Run updates in parallel and wait for both to complete
+    // const [userUpdate, otherUserUpdate] = await Promise.all(updateQueries);
+
+    // // If both updates failed, return error
+    // if (!userUpdate.modifiedCount && !otherUserUpdate.modifiedCount) {
+    //   return res
+    //     .status(400)
+    //     .json({ success: false, message: "❌ Request update failed!" });
+    // }
+
+    // const sender = await User.findById(request.user).lean();
+    // const receiver = await User.findById(userId).lean();
+
+    // console.log({ sender, receiver }, "User Data");
+
+    // if (!sender || !receiver) {
+    //   return res
+    //     .status(404)
+    //     .json({ success: false, message: "User not found!" });
+    // }
+
+    // new logic -------------------------------------------------------------------------------------------------------
+    // Find the request document
+    const request = await Request.findById(requestId);
+    if (!request) {
       return res
         .status(404)
-        .json({ success: false, message: "❌ Request not found!" });
+        .json({ success: false, message: "Request not found!" });
     }
 
-    if (!user || !user.sended_requests || !user.received_requests) {
-      console.error("User or request lists are undefined");
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid user data" });
-    }
-
-    const isSender = user.sended_requests.some(
-      (r) => r.requestId && r.requestId.toString() === requestId
-    );
-    console.log(isSender, "is sender");
-
-    const isReceiver = user.received_requests.some(
-      (r) => r.requestId && r.requestId.toString() === requestId
-    );
-
-    console.log(isReceiver, "is receiver");
+    // Check if the logged-in user is sender or receiver
+    const isSender = request.sender.toString() === userId;
+    const isReceiver = request.receiver.toString() === userId;
 
     if (!isSender && !isReceiver) {
-      return res.status(404).json({
+      return res.status(403).json({
         success: false,
-        message: "❌ Request not found in user data!",
+        message: "You are not authorized to update this request.",
       });
     }
 
-    // 🚫 Prevent changing to the same status
-    const requestField = isSender ? "sended_requests" : "received_requests";
-    console.log(
-      requestField,
-      "request field============================================"
-    );
-    const request = user[requestField].find(
-      (r) => r.requestId.toString() === requestId
-    );
-
+    // Prevent changing to the same status
     if (request.status === status) {
       return res.status(400).json({
         success: false,
-        message: `⚠️ Request is already '${status}'!`,
+        message: `Request is already '${status}'!`,
       });
     }
 
-    console.log(
-      request,
-      "request--------------------------------------------------------"
-    );
+    if (status === "completed") {
+      // Both sender and receiver can mark completed independently
+      if (isSender) request.completedBySender = true;
+      if (isReceiver) request.completedByReceiver = true;
 
-    let updateQueries = [];
+      if (request.completedBySender && request.completedByReceiver) {
+        request.status = "completed";
+      }
 
+      await request.save();
+      return request;
+    }
+
+    // Only receiver can reject or accept
+    if (status === "rejected" || status === "accepted") {
+      if (!isReceiver) {
+        throw new Error("Only receiver can reject/accept the request");
+      }
+      request.status = status; // set status to either 'rejected' or 'accepted'
+      await request.save();
+      return request;
+    }
+
+    // Only sender can cancel
     if (status === "cancelled") {
-      updateQueries = [
-        User.updateOne(
-          { _id: request.user, "received_requests.requestId": requestId },
-          { $set: { "received_requests.$.status": status } }
-        ),
-        User.updateOne(
-          { "sended_requests.requestId": requestId },
-          { $set: { "sended_requests.$.status": status } }
-        ),
-      ];
-    } else if (status === "rejected" || status === "accepted") {
-      updateQueries = [
-        // ✅ Update receiver's received_requests (user is rejecting the request)
-        User.updateOne(
-          { _id: userId, "received_requests.requestId": requestId },
-          { $set: { "received_requests.$.status": status } }
-        ),
-        // ✅ Update sender's sended_requests (their request is being rejected)
-        User.updateOne(
-          { _id: request.user, "sended_requests.requestId": requestId },
-          { $set: { "sended_requests.$.status": status } }
-        ),
-      ];
-    } else if (status === "completed") {
-      // ✅ Update only the user making the request when completed
-      updateQueries = [
-        User.updateOne(
-          { _id: userId, [`${requestField}.requestId`]: requestId },
-          { $set: { [`${requestField}.$.status`]: status } }
-        ),
-      ];
-    }
-
-    console.log(
-      updateQueries,
-      "uq---------------------------------------------------------------------"
-    );
-    // Run updates in parallel and wait for both to complete
-    const [userUpdate, otherUserUpdate] = await Promise.all(updateQueries);
-
-    // If both updates failed, return error
-    if (!userUpdate.modifiedCount && !otherUserUpdate.modifiedCount) {
-      return res
-        .status(400)
-        .json({ success: false, message: "❌ Request update failed!" });
-    }
-
-    const sender = await User.findById(request.user).lean();
-    const receiver = await User.findById(userId).lean();
-
-    console.log({ sender, receiver }, "User Data");
-
-    if (!sender || !receiver) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found!" });
+      if (!isSender) {
+        throw new Error("Only sender can cancel the request");
+      }
+      request.status = "cancelled";
+      await request.save();
+      return request;
     }
 
     return res.status(200).json({
@@ -1010,11 +1163,11 @@ module.exports = {
   sentRequestMobile,
   deleteRequest,
   updateRequestStatus,
-  getSendedRequestsMobile,
-  getReceivedRequestsMobile,
+  getUserRequests,
   getSentRequests,
   getReceivedRequests,
   getUsersWithRequestsCounts,
+  getSendedRequestsMobile,
+  getReceivedRequestsMobile,
   updateRequestStatusMobile,
-  getUserRequests,
 };

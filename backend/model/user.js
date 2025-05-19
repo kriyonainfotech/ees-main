@@ -187,7 +187,11 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    // Ratings received as a provider
+    userRatingCount: {
+      type: Number,
+      default: 0,
+    },
+
     providerRatings: [
       {
         rater: {
@@ -214,6 +218,11 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    providerRatingCount: {
+      type: Number,
+      default: 0,
+    },
+
     referralCode: { type: String, unique: true }, // Unique referral code (userId)
     referredBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // Up to 4 levels of referrals
     referrals: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // Direct referrals

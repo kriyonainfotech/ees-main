@@ -55,7 +55,7 @@ const Senedrequest = ({ sendedRequest, setSendedRequest }) => {
                 console.error("Error deleting request:", error);
                 toast.error(
                   error.response?.data?.message ||
-                    "An error occurred while deleting the request."
+                  "An error occurred while deleting the request."
                 );
               }
             }}
@@ -318,29 +318,28 @@ const Senedrequest = ({ sendedRequest, setSendedRequest }) => {
                   send.status === "rejected"
                     ? "Receiver has rejected the request."
                     : send.status === "completed"
-                    ? "Request completed, rate the user"
-                    : send.status === "accepted"
-                    ? "Request accepted, contact the user"
-                    : ""
+                      ? "Request completed, rate the user"
+                      : send.status === "accepted"
+                        ? "Request accepted, contact the user"
+                        : ""
                 }
                 className={`bg-white rounded-xl border overflow-hidden`}
               >
                 <div className="relative">
                   <img
-                    className="w-full h-[250px] md:h-[400px] object-cover object-center"
+                    className="w-full h-[250px] md:h-[350px] object-cover object-center"
                     src={send.profilePic || ProfileIcon}
                     alt="Profile"
                   />
                   <span
-                    className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold ${
-                      send.status === "accepted"
-                        ? "bg-blue-600"
-                        : send.status === "completed"
+                    className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold ${send.status === "accepted"
+                      ? "bg-blue-600"
+                      : send.status === "completed"
                         ? "bg-green-600"
                         : send.status === "rejected"
-                        ? "bg-red-600"
-                        : "bg-yellow-500"
-                    } text-white`}
+                          ? "bg-red-600"
+                          : "bg-yellow-500"
+                      } text-white`}
                   >
                     {send.status || "Pending"}
                   </span>
@@ -444,13 +443,24 @@ const Senedrequest = ({ sendedRequest, setSendedRequest }) => {
 
                   <div className="flex flex-wrap items-center mt-2 text-sm">
                     <span className="text-gray-800 pe-2 whitespace-nowrap">
+                      Provider Rating
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {renderStars(send?.providerRatingbySender?.value || 0, 10)}
+                    </div>
+                    <span className="ml-1 text-gray-700">
+                      {send?.providerRatingbySender?.value || 0}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center mt-2 text-sm">
+                    <span className="text-gray-800 pe-2 whitespace-nowrap">
                       User Rating:
                     </span>
                     <div className="flex flex-wrap gap-1">
-                      {renderStars(send?.providerrating?.value || 0, 10)}
+                      {renderStars(send?.userRatingbyprovider?.value || 0, 10)}
                     </div>
                     <span className="ml-1 text-gray-700">
-                      {send?.providerrating?.value || 0}
+                      {send?.userRatingbyprovider?.value || 0}
                     </span>
                   </div>
 
@@ -495,10 +505,10 @@ const Senedrequest = ({ sendedRequest, setSendedRequest }) => {
                     )}
                     {send.status === "completed" && (
                       <button
-                        className="w-full sm:w-auto p-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition"
+                        className="p-2 text-sm w-full bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition"
                         onClick={() => openModal(send)}
                       >
-                        Rate User
+                        Rate Service Provider
                       </button>
                     )}
                     {send.status === "cancelled" && (
@@ -511,13 +521,13 @@ const Senedrequest = ({ sendedRequest, setSendedRequest }) => {
                     )}
                     {(send.status === "rejected" ||
                       send.status === "rated") && (
-                      <button
-                        className="w-full sm:w-auto p-2 bg-gray-600 text-white rounded-lg hover:bg-red-900 transition"
-                        onClick={() => cancelRequest(send.requestId)}
-                      >
-                        Remove
-                      </button>
-                    )}
+                        <button
+                          className="w-full sm:w-auto p-2 bg-gray-600 text-white rounded-lg hover:bg-red-900 transition"
+                          onClick={() => cancelRequest(send.requestId)}
+                        >
+                          Remove
+                        </button>
+                      )}
                   </div>
                 </div>
               </div>

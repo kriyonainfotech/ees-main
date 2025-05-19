@@ -452,7 +452,6 @@ const distributeReferralRewards = async (newUserId, referrerId) => {
 
 //     console.log(`🔍 Payment Details:`, paymentDetails);
 
-
 //     // Update payment history with payment ID and status
 //     const updateResult = await UserModel.updateOne(
 //       {
@@ -622,6 +621,15 @@ const verifyPayment = async (req, res) => {
 
     console.log(`✅ User Updated:`, updatedUser);
 
+    if (updatedUser.referredBy.length > 0) {
+      console.log("[INFO] 🔄 User referred by:", updatedUser.referredBy[0]);
+
+      await distributeReferralRewards(
+        updatedUser._id,
+        updatedUser.referredBy[0]
+      );
+    }
+
     return res.status(200).json({
       success: true,
       message: "Payment verified and updated successfully",
@@ -636,7 +644,6 @@ const verifyPayment = async (req, res) => {
     });
   }
 };
-
 
 const generateGstInvoice = async (req, res) => {
   try {
