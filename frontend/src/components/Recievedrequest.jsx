@@ -188,12 +188,12 @@ const ReceivedRequest = ({ receivedRequest, setReceivedRequest, user }) => {
                   request.status === "cancelled"
                     ? "Sender has cancelled the request."
                     : request.status === "rejected"
-                      ? "Receiver has rejected the request."
-                      : request.status === "completed"
-                        ? "Request completed, rate the user."
-                        : request.status === "accepted"
-                          ? "Request accepted, contact the user."
-                          : ""
+                    ? "Receiver has rejected the request."
+                    : request.status === "completed"
+                    ? "Request completed, rate the user."
+                    : request.status === "accepted"
+                    ? "Request accepted, contact the user."
+                    : ""
                 }
                 className={`bg-white rounded-xl border  overflow-hidden`}
               >
@@ -204,12 +204,13 @@ const ReceivedRequest = ({ receivedRequest, setReceivedRequest, user }) => {
                     alt="Profile"
                   />
                   <span
-                    className={`absolute top-4 right-4 py-2 px-3 text-xs rounded-full font-semibold text-white ${request.status === "accepted"
-                      ? "bg-blue-600"
-                      : request.status === "completed"
+                    className={`absolute top-4 right-4 py-2 px-3 text-xs rounded-full font-semibold text-white ${
+                      request.status === "accepted"
+                        ? "bg-blue-600"
+                        : request.status === "completed"
                         ? "bg-green-600"
                         : "bg-yellow-500"
-                      }`}
+                    }`}
                   >
                     {request.status || "Pending"}
                   </span>
@@ -323,7 +324,10 @@ const ReceivedRequest = ({ receivedRequest, setReceivedRequest, user }) => {
                       Provider Rating:
                     </span>
                     <div className="flex gap-1 overflow-auto mt-1">
-                      {renderStars(request?.providerRatingbySender?.value || 0, 10)}
+                      {renderStars(
+                        request?.providerRatingbySender?.value || 0,
+                        10
+                      )}
                     </div>
                     <span className="text-gray-700 block mt-1 ps-2">
                       {request?.providerRatingbySender?.value || 0}
@@ -334,7 +338,10 @@ const ReceivedRequest = ({ receivedRequest, setReceivedRequest, user }) => {
                       User Rating:
                     </span>
                     <div className="flex gap-1 overflow-auto mt-1">
-                      {renderStars(request?.userRatingbyprovider?.value || 0, 10)}
+                      {renderStars(
+                        request?.userRatingbyprovider?.value || 0,
+                        10
+                      )}
                     </div>
                     <span className="text-gray-700 block mt-1 ps-2">
                       {request?.userRatingbyprovider?.value || 0}
@@ -413,7 +420,7 @@ const ReceivedRequest = ({ receivedRequest, setReceivedRequest, user }) => {
               </div>
             ))
           ) : (
-            <div className="col-span-3 text-center py-12">
+            <div className="col-span-12 text-center py-12">
               <h5>No Requests Found</h5>
               <p className="text-gray-500">
                 Your received requests will appear here.

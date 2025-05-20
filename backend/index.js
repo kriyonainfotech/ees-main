@@ -11,6 +11,13 @@ const cookieParser = require("cookie-parser");
 
 const bodyParser = require("body-parser");
 
+// const cronScheduler = require("./middleware/cronScheduler");
+
+// cronScheduler();
+
+const resetAllUsersRequests = require("./controllers/checkAndNotifyPayments");
+// resetAllUsersRequests();
+
 // Use this to fix the deprecation warning
 app.use(bodyParser.urlencoded({ extended: true })); // Change `true` or `false` as needed
 app.use(bodyParser.json());

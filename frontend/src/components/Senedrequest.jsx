@@ -533,7 +533,7 @@ const Senedrequest = ({ sendedRequest, setSendedRequest }) => {
               </div>
             ))
           ) : (
-            <div className="col-span-3 text-center py-12">
+            <div className="col-span-12 text-center py-12">
               <h5>No Requests Found</h5>
               <p className="text-gray-500">
                 Your sent requests will appear here.

@@ -165,7 +165,7 @@ const Work = () => {
             <div className="row">
               {/* Sticky Buttons in Current Position */}
               <div
-                className="col-12 d-flex gap-3 bg-white "
+                className="col-12 d-flex gap-3  "
                 style={{
                   position: "sticky",
                   top: "0",
@@ -177,10 +177,11 @@ const Work = () => {
                 {requests.map((req) => (
                   <div key={req.id} className="receivReqBtn">
                     <Link
-                      className={`btn rounded-lg ${currentRequest === req.name
+                      className={`btn rounded-lg ${
+                        currentRequest === req.name
                           ? "btn-success text-white"
                           : "bg-none border-black text-black"
-                        }`}
+                      }`}
                       onClick={() => setCurrentRequest(req.name)}
                     >
                       {req.name}

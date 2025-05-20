@@ -355,15 +355,17 @@ const registerUser = async (req, res) => {
     }
 
     // Handle referral
-    let referrer = null;
-    if (referralCode) {
-      referrer = await UserModel.findOne({ phone: referralCode })
-        .select("_id phone walletBalance fcmToken")
-        .lean();
-    }
+    // 3️⃣ Find referrer
+    const referrer = await findReferrer(referralCode);
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const uniqueId = await generateUniqueId();
+
+    const paymentExpiry = new Date();
+    paymentExpiry.setFullYear(paymentExpiry.getFullYear() + 1);
+
+    const fileKeys = await uploadToS3(req.files, uniqueId);
+    console.log("[INFO] 🖼️ Uploaded images to S3:", fileKeys);
 
     const user = new UserModel({
       userId: uniqueId,
@@ -377,55 +379,30 @@ const registerUser = async (req, res) => {
       businessAddress,
       businessDetaile,
       fcmToken,
-      frontAadhar: "",
-      backAadhar: "",
-      profilePic: "",
-      referralCode: uuidv4(),
+      frontAadhar: fileKeys.frontAadhar || "",
+      backAadhar: fileKeys.backAadhar || "",
+      profilePic: fileKeys.profilePic || "",
+      referralCode,
       referredBy: referrer ? [referrer._id] : [],
       isAdminApproved: false,
       walletBalance: 0,
+      paymentExpiry,
     });
 
+    user.referralCode = user._id;
+    console.log("[SUCCESS] ✅ User registration completed!", user);
     await user.save({ session });
 
-    // Handle referral update
     if (referrer) {
-      await UserModel.findByIdAndUpdate(
-        referrer._id,
-        {
-          $push: { referrals: user._id },
-        },
-        { session }
-      );
-
-      await sendNotification({
-        userId: referrer._id,
-        title: "New Referral",
-        message: `${name} has registered using your referral code!`,
-        fcmToken: referrer.fcmToken,
+      await UserModel.findByIdAndUpdate(referrer._id, {
+        $push: { referrals: user._id },
       });
+      console.log(`[INFO] 🔗 User added to ${referrer._id}'s referral list`);
+      await notifyReferrer(referrer, name);
     }
 
-    // ⬇️ Upload images to S3
-    try {
-      const fileKeys = await uploadToS3(files, user.userId);
-
-      await UserModel.findByIdAndUpdate(user._id, {
-        frontAadhar: fileKeys.frontAadhar || "",
-        backAadhar: fileKeys.backAadhar || "",
-        profilePic: fileKeys.profilePic || "",
-      });
-
-      console.log("[INFO] 🖼️ Images uploaded to S3 and user updated.");
-    } catch (uploadError) {
-      console.error("[ERROR] S3 upload failed:", uploadError);
-      await UserModel.findByIdAndDelete(user._id, { session });
-      await session.abortTransaction();
-      return res.status(500).json({
-        success: false,
-        message: "Image upload failed. Registration rolled back.",
-      });
-    }
+    await notifyAdmins(name);
+    console.log("[INFO] 🖼️ Registrated user:", user);
 
     await session.commitTransaction();
     session.endSession();
@@ -506,6 +483,8 @@ const loginUser = async (req, res) => {
         message: "Your account is not yet approved by the admin.",
       });
     }
+
+    console.log("Login successful", user.paymentExpiry);
 
     res.status(200).json({
       success: true,
@@ -665,6 +644,9 @@ const registerUserweb = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const uniqueId = await generateUniqueId();
 
+    const paymentExpiry = new Date();
+    paymentExpiry.setFullYear(paymentExpiry.getFullYear() + 1);
+
     const user = new UserModel({
       userId: uniqueId,
       name,
@@ -685,11 +667,15 @@ const registerUserweb = async (req, res) => {
       frontAadhar: "", // 🔹 Empty, will be updated later
       backAadhar: "",
       profilePic: "",
+      paymentExpiry,
     });
 
     user.referralCode = user._id;
     await user.save();
-    console.log("[SUCCESS] ✅ User registration completed!", user);
+    console.log(
+      "[SUCCESS] ✅ User registration completed!",
+      user.paymentExpiry
+    );
 
     // 5️⃣ Update referrer & notify
     if (referrer) {
