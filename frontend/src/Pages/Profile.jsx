@@ -20,10 +20,11 @@ import { FaShare } from "react-icons/fa";
 import { FaPlus } from "react-icons/fa";
 import axios from "axios";
 import ProfileIcon from "../../public/User_icon.webp";
+import DeleteAccount from "../components/Profile/DeleteAccount";
 
 const backend_API = import.meta.env.VITE_API_URL;
 
-const KYCModal = ({ onClose, onSubmit }) => {
+const KYCModal = ({ onClose, onSubmit, useruniqueId }) => {
   const [step, setStep] = useState(1);
 
   const [bankDetails, setBankDetails] = useState({
@@ -63,17 +64,16 @@ const KYCModal = ({ onClose, onSubmit }) => {
     { name: "Bank Proof", field: "bankProof" },
     { name: "PAN Front", field: "panCardfront" },
     { name: "PAN Back", field: "panCardback" },
-    { name: "Aadhar Front", field: "frontAadhar" },
-    { name: "Aadhar Back", field: "backAadhar" },
+    // { name: "Aadhar Front", field: "frontAadhar" },
+    // { name: "Aadhar Back", field: "backAadhar" },
   ];
 
   const handleSubmit = async () => {
     if (
       !files.bankProof ||
       !files.panCardfront ||
-      !files.panCardback ||
-      !files.frontAadhar ||
-      !files.backAadhar
+      !files.panCardback
+      // || !files.frontAadhar || !files.backAadhar
     ) {
       toast.error("Please upload all required documents.");
       return;
@@ -82,11 +82,13 @@ const KYCModal = ({ onClose, onSubmit }) => {
     formData.append("bankProof", files.bankProof);
     formData.append("panCardfront", files.panCardfront);
     formData.append("panCardback", files.panCardback);
-    formData.append("frontAadhar", files.frontAadhar);
-    formData.append("backAadhar", files.backAadhar);
+    // formData.append("frontAadhar", files.frontAadhar);
+    // formData.append("backAadhar", files.backAadhar);
     formData.append("bankAccountNumber", bankDetails.bankAccountNumber);
     formData.append("accountHolderName", bankDetails.accountHolderName);
     formData.append("ifscCode", bankDetails.ifscCode);
+    formData.append("useruniqueId", useruniqueId); // <- add this line
+
 
     try {
       const response = await axios.post(
@@ -461,11 +463,10 @@ const Profile = () => {
                           <p>
                             <strong>Status:</strong>
                             <span
-                              className={`ml-2 text-sm ${
-                                user.ekyc.status === "pending"
-                                  ? "text-gray-600"
-                                  : "text-green-600"
-                              }`}
+                              className={`ml-2 text-sm ${user.ekyc.status === "pending"
+                                ? "text-gray-600"
+                                : "text-green-600"
+                                }`}
                             >
                               {user.ekyc.status === "pending"
                                 ? "Pending (Your KYC Details are waiting for admin's approval)"
@@ -565,6 +566,7 @@ const Profile = () => {
 
                   {isKYCModalOpen && (
                     <KYCModal
+                      useruniqueId={user.userId}
                       onClose={() => setIsKYCModalOpen(false)}
                       onSubmit={() => {
                         setIsKYCModalOpen(false);
@@ -608,11 +610,10 @@ const Profile = () => {
                         Status:{" "}
                       </span>
                       <span
-                        className={`font-semibold ${
-                          user?.userstatus === "available"
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}
+                        className={`font-semibold ${user?.userstatus === "available"
+                          ? "text-green-600"
+                          : "text-red-600"
+                          }`}
                       >
                         {user?.userstatus}
                       </span>
@@ -667,6 +668,8 @@ const Profile = () => {
         </section>
 
         <AllBannners />
+
+        <DeleteAccount userId={user._id} />
       </div>
       <Footer />
     </>

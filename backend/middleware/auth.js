@@ -7,6 +7,8 @@ const verifyToken = async (req, res, next) => {
       ? req.headers.authorization.split(" ")[1] // Extract token after "Bearer"
       : req.cookies.refreshToken;
 
+    console.log(token, "veritoken api middleware")
+
     // Check if token exists
     if (!token) {
       return res.status(401).send({

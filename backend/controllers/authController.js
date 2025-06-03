@@ -7,6 +7,7 @@ const nodemailer = require("nodemailer");
 const { v4: uuidv4 } = require("uuid");
 const { uploadToS3 } = require("../services/authService");
 const AWS = require("aws-sdk");
+const WithdrawModel = require("../model/withdrawal")
 
 const s3 = new AWS.S3({
   region: process.env.AWS_REGION,
@@ -56,219 +57,6 @@ const deleteS3File = async (fileUrl) => {
     console.error(`[ERROR] ❌ Failed to delete from S3: ${key}`, err);
   }
 };
-
-// const registerUser = async (req, res) => {
-//   const startTime = Date.now();
-//   console.log(`[${new Date().toISOString()}] Starting registerUser request`);
-
-//   try {
-//     // Get uploaded files
-//     const { files } = req;
-//     console.log("[DEBUG] Uploaded files:", files);
-
-//     // Validate file uploads
-//     if (
-//       !files?.frontAadhar?.[0] ||
-//       !files?.backAadhar?.[0] ||
-//       !files?.profilePic?.[0]
-//     ) {
-//       return res.status(400).json({
-//         success: false,
-//         message:
-//           "Please upload all required documents (Front Aadhar, Back Aadhar, and Profile Picture)",
-//       });
-//     }
-
-//     const {
-//       name,
-//       email,
-//       password,
-//       phone,
-//       businessCategory,
-//       businessName,
-//       businessAddress,
-//       businessDetaile,
-//       fcmToken,
-//       referralCode,
-//       // Address fields directly from body
-//       area,
-//       city,
-//       state,
-//       country,
-//       pincode,
-//     } = req.body;
-
-//     console.log("[DEBUG] Request body:", req.body);
-
-//     // Construct address object directly
-//     const address = {
-//       area,
-//       city,
-//       state,
-//       country,
-//       pincode,
-//     };
-
-//     // Validate address fields
-//     const requiredAddressFields = [
-//       "area",
-//       "city",
-//       "state",
-//       "country",
-//       "pincode",
-//     ];
-//     const missingFields = requiredAddressFields.filter(
-//       (field) => !address[field]
-//     );
-
-//     if (missingFields.length > 0) {
-//       return res.status(400).json({
-//         success: false,
-//         message: `Missing required address fields: ${missingFields.join(", ")}`,
-//       });
-//     }
-
-//     // Basic validation
-//     if (!name || !email || !password || !phone) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Please fill all required fields",
-//       });
-//     }
-
-//     // Check for existing user
-//     const [emailExists, phoneExists] = await Promise.all([
-//       UserModel.exists({ email }).lean(),
-//       UserModel.exists({ phone }).lean(),
-//     ]);
-
-//     if (emailExists) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Email already exists",
-//       });
-//     }
-
-//     if (phoneExists) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Phone number already exists",
-//       });
-//     }
-
-//     // Handle referral
-//     let referrer = null;
-//     if (referralCode) {
-//       referrer = await UserModel.findOne({ phone: referralCode })
-//         .select("_id phone walletBalance")
-//         .lean();
-//     }
-
-//     // Hash password
-//     const hashedPassword = await bcrypt.hash(password, 10);
-
-//     // Generate unique ID
-//     const uniqueId = await generateUniqueId();
-
-//     // Create user with all fields
-//     const user = new UserModel({
-//       userId: uniqueId,
-//       name,
-//       email,
-//       password: hashedPassword,
-//       phone,
-//       address,
-//       businessCategory,
-//       businessName,
-//       businessAddress,
-//       businessDetaile,
-//       fcmToken,
-//       frontAadhar: files.frontAadhar[0].path,
-//       backAadhar: files.backAadhar[0].path,
-//       profilePic: files.profilePic[0].path,
-//       referralCode: uuidv4(),
-//       referredBy: referrer ? [referrer._id] : [],
-//       isAdminApproved: false,
-//       walletBalance: 0,
-//     });
-
-//     // Use transaction for referral updates
-//     const session = await mongoose.startSession();
-//     session.startTransaction();
-
-//     try {
-//       await user.save({ session });
-
-//       // Update referrer if exists
-//       if (referrer) {
-//         await UserModel.findByIdAndUpdate(
-//           referrer._id,
-//           {
-//             $push: { referrals: user._id },
-//           },
-//           { session }
-//         );
-
-//         // Send notification to referrer
-//         await sendNotification({
-//           userId: referrer._id,
-//           title: "New Referral",
-//           message: `${name} has registered using your referral code!`,
-//           fcmToken: referrer.fcmToken,
-//         });
-//       }
-
-//       await session.commitTransaction();
-//     } catch (error) {
-//       // If there's an error, delete uploaded files
-//       try {
-//         const filesToDelete = [
-//           files.frontAadhar[0].path,
-//           files.backAadhar[0].path,
-//           files.profilePic[0].path,
-//         ];
-
-//         for (const filePath of filesToDelete) {
-//           const publicId = getPublicIdFromUrl(filePath);
-//           if (publicId) {
-//             await cloudinary.uploader.destroy(publicId);
-//           }
-//         }
-//       } catch (cleanupError) {
-//         console.error(
-//           "[ERROR] Failed to cleanup uploaded files:",
-//           cleanupError
-//         );
-//       }
-
-//       await session.abortTransaction();
-//       throw error;
-//     } finally {
-//       session.endSession();
-//     }
-
-//     console.log(`Registration completed in ${Date.now() - startTime}ms`);
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "Registration successful! Awaiting admin approval.",
-//       user: {
-//         id: user._id,
-//         name: user.name,
-//         email: user.email,
-//         referralCode: user.referralCode,
-//         referredBy: referrer?.phone || null,
-//       },
-//     });
-//   } catch (error) {
-//     console.error("[ERROR] Registration failed:", error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Registration failed. Please try again.",
-//       error: process.env.NODE_ENV === "development" ? error.message : undefined,
-//     });
-//   }
-// };
 
 const registerUser = async (req, res) => {
   const startTime = Date.now();
@@ -500,113 +288,6 @@ const loginUser = async (req, res) => {
     });
   }
 };
-
-// const registerUserweb = async (req, res) => {
-//   try {
-//     console.log("[INFO] 🟢 Starting user registration process...");
-
-//     // 1️⃣ Validate files
-//     validateFiles(req.files);
-
-//     // 2️⃣ Extract form data
-//     const {
-//       name,
-//       email,
-//       password,
-//       phone,
-//       address,
-//       businessCategory,
-//       businessName,
-//       businessAddress,
-//       businessDetaile,
-//       fcmToken,
-//       referralCode,
-//     } = req.body;
-
-//     if (!name || !email || !password || !phone || !address) {
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "Missing required fields" });
-//     }
-
-//     // 3️⃣ Parse address
-//     const parsedAddress = parseAddress(address);
-
-//     // 4️⃣ Check existing user
-//     await checkExistingUser(email, phone);
-
-//     // 5️⃣ Find referrer
-//     const referrer = await findReferrer(referralCode);
-
-//     // 6️⃣ Hash password & create user
-//     const hashedPassword = await bcrypt.hash(password, 10);
-//     const uniqueId = await generateUniqueId();
-
-//     const user = new UserModel({
-//       userId: uniqueId,
-//       name,
-//       email,
-//       password: hashedPassword,
-//       phone,
-//       address: parsedAddress,
-//       businessCategory,
-//       businessName,
-//       businessAddress,
-//       businessDetaile,
-//       fcmToken,
-//       referralCode,
-//       referredBy: referrer ? [referrer._id] : [],
-//       isAdminApproved: false,
-//       walletBalance: 0,
-//       earningsHistory: [],
-//       frontAadhar: req.files.frontAadhar
-//         ? req.files.frontAadhar[0].location
-//         : "",
-//       backAadhar: req.files.backAadhar ? req.files.backAadhar[0].location : "",
-//       profilePic: req.files.profilePic ? req.files.profilePic[0].location : "",
-//     });
-
-//     // Save user and update referrer
-//     user.referralCode = user._id;
-//     await user.save();
-//     console.log("[SUCCESS] ✅ User registration completed!", user);
-
-//     if (referrer) {
-//       await UserModel.findByIdAndUpdate(referrer?._id, {
-//         $push: { referrals: user._id },
-//       });
-//      console.log(`[INFO] 🔗 User added to ${referrer?._id}'s referral list`);
-//     }
-
-//     // 7️⃣ Notify Referrer
-//     await notifyReferrer(referrer, name);
-
-//     // 8️⃣ Notify All Admins
-//     await notifyAdmins(name);
-
-//     // 9️⃣ Generate authentication token
-//     const token = jwt.sign(
-//       { id: user._id, isAdminApproved: false },
-//       process.env.JWT_SECRET,
-//       { expiresIn: "24h" }
-//     );
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "Registration successful! Awaiting admin approval.",
-//       user: {
-//         id: user._id,
-//         name: user.name,
-//         email: user.email,
-//         referralCode: user.referralCode,
-//       },
-//       token,
-//     });
-//   } catch (error) {
-//     console.error("[ERROR] ❌ Registration failed:", error);
-//     return res.status(500).json({ success: false, message: error.message });
-//   }
-// };
 
 const registerUserweb = async (req, res) => {
   try {
@@ -1190,7 +871,7 @@ const updateProfileMobile = async (req, res) => {
 //     const userId = req.body.id;
 
 //     // Fetch user before deletion
-//     const user = await UserModel.findById(userId);
+//     const user = await UserModel.findById(userId).populate("ekyc"); // Populate KYC data
 //     if (!user) {
 //       return res.status(404).send({
 //         success: false,
@@ -1222,23 +903,41 @@ const updateProfileMobile = async (req, res) => {
 //       console.log("[INFO] ✅ Removed user from referrer’s referral list");
 //     }
 
-//     // Delete user's images from Cloudinary (Aadhar + Profile Pic)
-//     const cloudinary = require("cloudinary").v2;
+//     const userImages = [];
 
-//     const deleteCloudinaryImage = async (imageUrl) => {
-//       if (imageUrl) {
-//         const publicId = imageUrl.split("/").pop().split(".")[0]; // Extract public ID
-//         await cloudinary.uploader.destroy(publicId);
-//       }
-//     };
+//     if (user.profilePic) userImages.push(user.profilePic);
+//     if (user.frontAadhar) userImages.push(user.frontAadhar);
+//     if (user.backAadhar) userImages.push(user.backAadhar);
 
-//     await deleteCloudinaryImage(user.profilePic);
-//     await deleteCloudinaryImage(user.frontAadhar);
-//     await deleteCloudinaryImage(user.backAadhar);
+//     if (user.ekyc) {
+//       console.log("[INFO] 🔍 User has eKYC, deleting KYC images...");
 
-//     console.log(
-//       "[INFO] ✅ Deleted user's profile and Aadhar images from Cloudinary"
-//     );
+//       if (user.ekyc.panCardfront) userImages.push(user.ekyc.panCardfront);
+//       if (user.ekyc.panCardback) userImages.push(user.ekyc.panCardback);
+//       if (user.ekyc.bankProof) userImages.push(user.ekyc.bankProof);
+
+//       await KYCModel.findByIdAndDelete(user.ekyc._id);
+//       console.log("[INFO] ✅ Deleted user's KYC record");
+//     }
+
+//     // Delete user's KYC images if they have eKYC
+//     if (user.ekyc) {
+//       console.log("[INFO] 🔍 User has eKYC, deleting KYC images...");
+//       userImages.push(
+//         user.ekyc.panCardfront,
+//         user.ekyc.panCardback,
+//         user.ekyc.bankProof
+//       );
+
+//       // Delete the KYC record
+//       await KYCModel.findByIdAndDelete(user.ekyc._id);
+//       console.log("[INFO] ✅ Deleted user's KYC record");
+//     }
+
+//     // Delete all collected images from Cloudinary
+//     await Promise.all(userImages.map((key) => deleteS3File(key)));
+
+//     console.log("[INFO] ✅ Deleted all user's images from S3");
 
 //     // Finally, delete user
 //     await UserModel.findByIdAndDelete(userId);
@@ -1250,7 +949,7 @@ const updateProfileMobile = async (req, res) => {
 //       message: "User deleted successfully",
 //     });
 //   } catch (error) {
-//     console.error("[ERROR] ❌", error);
+//     console.log("[ERROR] ❌", error);
 //     return res.status(500).send({
 //       success: false,
 //       message: "An error occurred while deleting the user",
@@ -1262,32 +961,16 @@ const updateProfileMobile = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const userId = req.body.id;
-
-    // Fetch user before deletion
-    const user = await UserModel.findById(userId).populate("ekyc"); // Populate KYC data
+    console.log(req.body, "userId im delete user")
+    const user = await UserModel.findById(userId).populate("ekyc");
     if (!user) {
-      return res.status(404).send({
-        success: false,
-        message: "User not found",
-      });
+      console.log("User Not Found")
+      return res.status(404).send({ success: false, message: "User not found" });
     }
 
     console.log(`[INFO] 🔄 Removing user-related data for user: ${userId}`);
 
-    // Remove the user's requests from both users
-    await UserModel.updateMany(
-      { "sended_requests.user": userId },
-      { $pull: { sended_requests: { user: userId } } }
-    );
-
-    await UserModel.updateMany(
-      { "received_requests.user": userId },
-      { $pull: { received_requests: { user: userId } } }
-    );
-
-    console.log("[INFO] ✅ Cleared all related requests");
-
-    // Remove user ID from referrer's referral list if applicable
+    // 2. Withdraw user from referrer’s referral list
     if (user.referredBy) {
       await UserModel.updateOne(
         { _id: user.referredBy },
@@ -1296,45 +979,36 @@ const deleteUser = async (req, res) => {
       console.log("[INFO] ✅ Removed user from referrer’s referral list");
     }
 
+    // 3. Collect all images to delete
     const userImages = [];
 
     if (user.profilePic) userImages.push(user.profilePic);
     if (user.frontAadhar) userImages.push(user.frontAadhar);
     if (user.backAadhar) userImages.push(user.backAadhar);
 
+    // 4. Delete eKYC images + document
     if (user.ekyc) {
-      console.log("[INFO] 🔍 User has eKYC, deleting KYC images...");
+      const { panCardfront, panCardback, bankProof, _id: ekycId } = user.ekyc;
+      if (panCardfront) userImages.push(panCardfront);
+      if (panCardback) userImages.push(panCardback);
+      if (bankProof) userImages.push(bankProof);
 
-      if (user.ekyc.panCardfront) userImages.push(user.ekyc.panCardfront);
-      if (user.ekyc.panCardback) userImages.push(user.ekyc.panCardback);
-      if (user.ekyc.bankProof) userImages.push(user.ekyc.bankProof);
-
-      await KYCModel.findByIdAndDelete(user.ekyc._id);
-      console.log("[INFO] ✅ Deleted user's KYC record");
+      await KYCModel.findByIdAndDelete(ekycId);
+      console.log("[INFO] ✅ Deleted eKYC document");
     }
 
-    // Delete user's KYC images if they have eKYC
-    if (user.ekyc) {
-      console.log("[INFO] 🔍 User has eKYC, deleting KYC images...");
-      userImages.push(
-        user.ekyc.panCardfront,
-        user.ekyc.panCardback,
-        user.ekyc.bankProof
-      );
+    // 5. Delete withdrawal documents (assumed model: WithdrawModel)
+    // 5. Delete withdrawal documents (no proofImage field now)
+    await WithdrawModel.deleteMany({ user: userId });
+    console.log("[INFO] ✅ Deleted all withdrawal records for the user");
 
-      // Delete the KYC record
-      await KYCModel.findByIdAndDelete(user.ekyc._id);
-      console.log("[INFO] ✅ Deleted user's KYC record");
-    }
 
-    // Delete all collected images from Cloudinary
+    // 6. Delete all collected images from AWS
     await Promise.all(userImages.map((key) => deleteS3File(key)));
+    console.log("[INFO] ✅ Deleted all user's images from AWS");
 
-    console.log("[INFO] ✅ Deleted all user's images from S3");
-
-    // Finally, delete user
+    // 7. Delete user
     await UserModel.findByIdAndDelete(userId);
-
     console.log("[SUCCESS] 🚀 User deleted successfully");
 
     return res.status(200).send({

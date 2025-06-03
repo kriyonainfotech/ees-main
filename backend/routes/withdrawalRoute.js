@@ -24,14 +24,14 @@ router.post(
     { name: "bankProof", maxCount: 1 },
     { name: "panCardfront", maxCount: 1 },
     { name: "panCardback", maxCount: 1 },
-    { name: "frontAadhar", maxCount: 1 },
-    { name: "backAadhar", maxCount: 1 },
+    // { name: "frontAadhar", maxCount: 1 },
+    // { name: "backAadhar", maxCount: 1 },
   ]),
   addekyc
 );
 
-router.post("/request",verifyToken, submitWithdrawalRequest);
-router.get("/withdrawals",isAdmin ,getWithdrawalRequests);
+router.post("/request", verifyToken, submitWithdrawalRequest);
+router.get("/withdrawals", isAdmin, getWithdrawalRequests);
 router.post("/verifyKyc", verifyKYC);
 router.post("/approveKyc", approveBankWithdrawal);
 

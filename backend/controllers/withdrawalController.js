@@ -13,34 +13,34 @@ const razorpayInstance = new Razorpay({
 const addekyc = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { bankAccountNumber, accountHolderName, ifscCode, upiId, amount } =
+    const { bankAccountNumber, accountHolderName, ifscCode, upiId, amount, useruniqueId } =
       req.body;
 
-    console.log("🛠️ adding ekyc for user:", userId);
+    console.log("🛠️ adding ekyc for user:", req.body);
 
     const files = req.files;
 
-    const getFileUrl = async (fieldName) => {
+    const getFileUrl = async (fieldName, label) => {
       if (files?.[fieldName]?.[0]) {
         const file = files[fieldName][0];
-        return await uploadToS3(file.buffer, file.originalname, "ekyc");
+        return await uploadToS3(file.buffer, file.originalname, "ekyc", useruniqueId, label);
       }
       return null;
     };
 
     // Upload all files to S3
-    const panCardfront = await getFileUrl("panCardfront");
-    const panCardback = await getFileUrl("panCardback");
-    const bankProof = await getFileUrl("bankProof");
-    const frontAadhar = await getFileUrl("frontAadhar");
-    const backAadhar = await getFileUrl("backAadhar");
+    const panCardfront = await getFileUrl("panCardfront", "panfront");
+    const panCardback = await getFileUrl("panCardback", "panback");
+    const bankProof = await getFileUrl("bankProof", "bankproof");
+    // const frontAadhar = await getFileUrl("frontAadhar", "aadharfront");
+    // const backAadhar = await getFileUrl("backAadhar", "aadharback");
 
     console.log("📂 Uploaded files:", {
       panCardfront,
       panCardback,
       bankProof,
-      frontAadhar,
-      backAadhar,
+      // frontAadhar,
+      // backAadhar,
     });
 
     // Validations
@@ -91,13 +91,16 @@ const addekyc = async (req, res) => {
     const user = await UserModel.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found." });
 
+    // await UserModel.findByIdAndUpdate(userId, {
+    //   ...(user.ekyc ? {} : { ekyc: newKYC._id }),
+    //   frontAadhar: frontAadhar || user.frontAadhar,
+    //   backAadhar: backAadhar || user.backAadhar,
+    // });
     await UserModel.findByIdAndUpdate(userId, {
-      ...(user.ekyc ? {} : { ekyc: newKYC._id }),
-      frontAadhar: frontAadhar || user.frontAadhar,
-      backAadhar: backAadhar || user.backAadhar,
+      ekyc: newKYC._id,
     });
 
-    console.log("✅ User updated with ekyc and Aadhar images");
+    console.log("✅ User updated with ekyc.");
 
     res.status(201).send({
       message: "Withdrawal request submitted successfully.",
@@ -262,7 +265,7 @@ const submitWithdrawalRequest = async (req, res) => {
 
 const getWithdrawalRequests = async (req, res) => {
   // try {
-    // Fetch withdrawal requests and count
+  // Fetch withdrawal requests and count
   //   const withdrawals = await KYC.find().populate("userId", "name phone");
   //   const count = await KYC.countDocuments();
 
@@ -281,7 +284,7 @@ const getWithdrawalRequests = async (req, res) => {
   //   });
   // }
 
-     try {
+  try {
     console.log("📥 Fetching all withdrawal requests...");
 
     const withdrawals = await Withdrawal.find()
@@ -294,7 +297,7 @@ const getWithdrawalRequests = async (req, res) => {
 
     console.log(`✅ Total: ${totalWithdrawals}, Pending: ${pendingWithdrawals}`);
 
-       res.status(200).json({
+    res.status(200).json({
       success: true,
       message: "All withdrawal requests fetched successfully.",
       totalWithdrawals,
@@ -594,5 +597,5 @@ module.exports = {
   addekyc,
   processUPIPayout,
   approveWithdrawal,
-  approveBankWithdrawal,submitWithdrawalRequest
+  approveBankWithdrawal, submitWithdrawalRequest
 };
