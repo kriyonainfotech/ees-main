@@ -225,6 +225,7 @@ const loginUser = async (req, res) => {
   try {
     const { phone, password } = req.body;
 
+    // Step 1: Validate input
     if (!phone || !password) {
       return res.status(400).json({
         success: false,
@@ -232,28 +233,28 @@ const loginUser = async (req, res) => {
       });
     }
 
-    const user = await UserModel.findOne(
-      { phone },
-      "-sended_requests -received_requests"
-    )
+    // Step 2: Check if user with the phone exists
+    const userExists = await UserModel.findOne({ phone }).select("_id");
+
+    if (!userExists) {
+      return res.status(404).json({
+        success: false,
+        message: "No account found with this phone number",
+      });
+    }
+
+    // Step 3: Now fetch full user with populated data
+    const user = await UserModel.findOne({ phone })
       .populate({
         path: "referrals",
         select: "name phone email profilePic paymentVerified createdAt",
       })
       .populate({
         path: "earningsHistory.sourceUser",
-        select: "name phone referredBy ",
+        select: "name phone referredBy",
       });
 
-    if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid Phone or Password",
-      });
-    }
-
-    console.log(user, "login user");
-
+    // Step 4: Check password
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
@@ -263,15 +264,15 @@ const loginUser = async (req, res) => {
       });
     }
 
-    // Check if the user is admin approved
+    // Step 5: Admin approval check
     if (!user.isAdminApproved) {
       return res.status(403).json({
-        // 403 Forbidden
         success: false,
         message: "Your account is not yet approved by the admin.",
       });
     }
 
+    // Step 6: Successful login
     console.log("Login successful", user.paymentExpiry);
 
     res.status(200).json({
@@ -279,15 +280,16 @@ const loginUser = async (req, res) => {
       message: "Login successful",
       user,
     });
+
   } catch (error) {
     console.error("Login error:", error);
     return res.status(500).json({
       success: false,
       message: "An error occurred during login",
-      // error: error.message,  // Don't send detailed errors in production
     });
   }
 };
+
 
 const registerUserweb = async (req, res) => {
   try {
@@ -497,11 +499,93 @@ const approveUser = async (req, res) => {
   }
 };
 
+// const loginUserweb = async (req, res) => {
+//   try {
+//     console.log(req.body, "body");
+
+//     const { phone, password, fcmToken } = req.body; // Include fcmToken in the request body
+//     if (!phone || !password) {
+//       return res.status(400).send({
+//         success: false,
+//         message: "Phone and Password are required",
+//       });
+//     }
+
+//     // Check if user exists
+//     // const user = await UserModel.findOne({ phone });
+//     const user = await UserModel.findOne({ phone }).select(
+//       "name phone isAdminApproved password role"
+//     );
+
+//     if (!user) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid Phone or Password",
+//       });
+//     }
+//     // console.log(user ,"userPhone");
+
+//     // Check if user is approved by admin
+//     if (!user.isAdminApproved) {
+//       return res.status(400).send({
+//         success: false,
+//         message: "Your account is pending admin approval",
+//       });
+//     }
+
+//     // Check password
+//     const isMatch = await bcrypt.compare(password, user.password);
+//     if (!isMatch) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid Phone or Password",
+//       });
+//     }
+
+//     // Update FCM token if provided
+//     if (fcmToken) {
+//       user.fcmToken = fcmToken; // Ensure your UserModel schema has an `fcmToken` field
+//       await user.save();
+//     }
+
+//     // Generate token and set cookie
+//     const token = jwt.sign(
+//       { id: user._id, isAdminApproved: user.isAdminApproved, role: user.role },
+//       process.env.JWT_SECRET,
+//       {
+//         expiresIn: "24h",
+//       }
+//     );
+
+//     res.cookie("refreshToken", token, {
+//       httpOnly: true,
+//       sameSite: "None",
+//       secure: true,
+//       maxAge: 3 * 60 * 60 * 1000, // 3 hours in milliseconds
+//     });
+//     console.log("Login successful");
+
+//     return res.status(200).json({
+//       success: true,
+//       message: `Login successful`,
+//       token,
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     return res.status(500).send({
+//       success: false,
+//       message: "An error occurred during login",
+//       error: error.message,
+//     });
+//   }
+// };
 const loginUserweb = async (req, res) => {
   try {
     console.log(req.body, "body");
 
-    const { phone, password, fcmToken } = req.body; // Include fcmToken in the request body
+    const { phone, password, fcmToken } = req.body;
+
+    // Step 1: Input validation
     if (!phone || !password) {
       return res.status(400).send({
         success: false,
@@ -509,29 +593,30 @@ const loginUserweb = async (req, res) => {
       });
     }
 
-    // Check if user exists
-    // const user = await UserModel.findOne({ phone });
+    // Step 2: Check if user with phone exists first (faster lookup)
+    const userExists = await UserModel.findOne({ phone }).select("_id");
+
+    if (!userExists) {
+      return res.status(404).json({
+        success: false,
+        message: "No account found with this phone number",
+      });
+    }
+
+    // Step 3: Fetch user with selected fields
     const user = await UserModel.findOne({ phone }).select(
       "name phone isAdminApproved password role"
     );
 
-    if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid Phone or Password",
-      });
-    }
-    // console.log(user ,"userPhone");
-
-    // Check if user is approved by admin
+    // Step 4: Check admin approval
     if (!user.isAdminApproved) {
-      return res.status(400).send({
+      return res.status(403).send({
         success: false,
         message: "Your account is pending admin approval",
       });
     }
 
-    // Check password
+    // Step 5: Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({
@@ -540,32 +625,39 @@ const loginUserweb = async (req, res) => {
       });
     }
 
-    // Update FCM token if provided
+    // Step 6: Update FCM token if provided
     if (fcmToken) {
-      user.fcmToken = fcmToken; // Ensure your UserModel schema has an `fcmToken` field
+      user.fcmToken = fcmToken; // Make sure `fcmToken` exists in schema
       await user.save();
     }
 
-    // Generate token and set cookie
+    // Step 7: Generate JWT token
     const token = jwt.sign(
-      { id: user._id, isAdminApproved: user.isAdminApproved, role: user.role },
+      {
+        id: user._id,
+        isAdminApproved: user.isAdminApproved,
+        role: user.role,
+      },
       process.env.JWT_SECRET,
       {
         expiresIn: "24h",
       }
     );
 
+    // Step 8: Set refresh token cookie
     res.cookie("refreshToken", token, {
       httpOnly: true,
       sameSite: "None",
       secure: true,
-      maxAge: 3 * 60 * 60 * 1000, // 3 hours in milliseconds
+      maxAge: 3 * 60 * 60 * 1000, // 3 hours
     });
+
     console.log("Login successful");
 
+    // Step 9: Final response
     return res.status(200).json({
       success: true,
-      message: `Login successful`,
+      message: "Login successful",
       token,
     });
   } catch (error) {
@@ -577,6 +669,7 @@ const loginUserweb = async (req, res) => {
     });
   }
 };
+
 
 const getAdmin = async (req, res) => {
   try {

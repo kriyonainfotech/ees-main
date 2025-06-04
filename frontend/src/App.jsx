@@ -104,13 +104,14 @@ export default function App() {
                 <Route path="/forgotPassword" element={<ForgotPassword />} />
                 <Route path="/verifyOtp" element={<VerifyOtp />} />
                 <Route path="/resetPassword" element={<ResetPassword />} />
+                <Route path="/support" element={<Support />} />
+
                 {/* Protected Routes */}
                 <Route element={<ProtectedRoute />}>
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/editprofile" element={<EditProfile />} />
                   <Route path="/serviceDetail" element={<ServiceDetail />} />
                   <Route path="/work" element={<Work />} />
-                  <Route path="/support" element={<Support />} />
                   <Route path="/wallete" element={<Wallete />} />
                   <Route path="/team" element={<Team />} />
 
