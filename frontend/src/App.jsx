@@ -104,7 +104,7 @@ export default function App() {
                 <Route path="/forgotPassword" element={<ForgotPassword />} />
                 <Route path="/verifyOtp" element={<VerifyOtp />} />
                 <Route path="/resetPassword" element={<ResetPassword />} />
-                <Route path="/support" element={<Support />} />
+                <Route path="/customer-support" element={<Support />} />
 
                 {/* Protected Routes */}
                 <Route element={<ProtectedRoute />}>

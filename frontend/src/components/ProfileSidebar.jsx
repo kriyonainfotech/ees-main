@@ -29,7 +29,7 @@ const ProfileSidebar = () => {
     {
       title: 'Customer Care',
       icon: <FaPhone />,
-      path: '/support',
+      path: '/customer-support',
     },
     {
       title: 'PrivacyPolicy',
