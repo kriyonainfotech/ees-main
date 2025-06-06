@@ -4,7 +4,7 @@ dotenv.config();
 const express = require("express");
 const app = express();
 const connectDB = require("./config/db");
-const port = 3000;
+const port = 5000;
 const serverType = "Web Backend";
 connectDB();
 const cookieParser = require("cookie-parser");
@@ -12,7 +12,6 @@ const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 
 // const cronScheduler = require("./middleware/cronScheduler");
-
 // cronScheduler();
 
 const resetAllUsersRequests = require("./controllers/checkAndNotifyPayments");

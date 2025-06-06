@@ -17,10 +17,11 @@ const ReceivedRequest = ({ receivedRequest, setReceivedRequest, user }) => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [status, setStatus] = useState(null);
   const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("")
 
   const token = JSON.parse(localStorage.getItem("token"));
 
-  const handleAction = async (id, requestId, status) => {
+  const handleAction = async (id, requestId, status, comment) => {
     console.log(id, status, requestId, "id, status, requestId");
     try {
       const endpoint =
@@ -61,7 +62,7 @@ const ReceivedRequest = ({ receivedRequest, setReceivedRequest, user }) => {
     requestId,
     receiverId,
     ratingValue,
-    comment = ""
+    comment
   ) => {
     console.log(
       requestId,
@@ -188,12 +189,12 @@ const ReceivedRequest = ({ receivedRequest, setReceivedRequest, user }) => {
                   request.status === "cancelled"
                     ? "Sender has cancelled the request."
                     : request.status === "rejected"
-                    ? "Receiver has rejected the request."
-                    : request.status === "completed"
-                    ? "Request completed, rate the user."
-                    : request.status === "accepted"
-                    ? "Request accepted, contact the user."
-                    : ""
+                      ? "Receiver has rejected the request."
+                      : request.status === "completed"
+                        ? "Request completed, rate the user."
+                        : request.status === "accepted"
+                          ? "Request accepted, contact the user."
+                          : ""
                 }
                 className={`bg-white rounded-xl border  overflow-hidden`}
               >
@@ -204,13 +205,12 @@ const ReceivedRequest = ({ receivedRequest, setReceivedRequest, user }) => {
                     alt="Profile"
                   />
                   <span
-                    className={`absolute top-4 right-4 py-2 px-3 text-xs rounded-full font-semibold text-white ${
-                      request.status === "accepted"
-                        ? "bg-blue-600"
-                        : request.status === "completed"
+                    className={`absolute top-4 right-4 py-2 px-3 text-xs rounded-full font-semibold text-white ${request.status === "accepted"
+                      ? "bg-blue-600"
+                      : request.status === "completed"
                         ? "bg-green-600"
                         : "bg-yellow-500"
-                    }`}
+                      }`}
                   >
                     {request.status || "Pending"}
                   </span>
@@ -437,9 +437,23 @@ const ReceivedRequest = ({ receivedRequest, setReceivedRequest, user }) => {
             <h3 className="text-lg font-semibold mb-4">
               Rate {selectedRequest.name}
             </h3>
-            <div className="flex justify-center mb-4">
-              {renderStars(rating, 10, true)}
+
+            <div className="flex flex-wrap items-center justify-between pb-2">
+
+              <div className="flex justify-center">
+                {renderStars(rating, 10, true)}
+              </div>
+              {/* Comment Input */}
+              <textarea
+                className="w-full border border-gray-300 rounded-md p-2 mb-4 resize-none"
+                rows={3}
+                placeholder="Write a comment ..."
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+              />
             </div>
+
+
             <div className="flex justify-end gap-2">
               <button
                 className="p-2 text-sm bg-gray-400 text-white rounded-lg"
@@ -453,7 +467,7 @@ const ReceivedRequest = ({ receivedRequest, setReceivedRequest, user }) => {
                   submitRating(
                     selectedRequest.requestId,
                     selectedRequest.senderId,
-                    rating
+                    rating, comment
                   )
                 }
               >

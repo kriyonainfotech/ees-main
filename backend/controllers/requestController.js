@@ -923,211 +923,213 @@ const updateRequestStatus = async (req, res) => {
   }
 };
 
+// const updateRequestStatusMobile = async (req, res) => {
+//   try {
+//     const { userId, requestId, status } = req.body; // 🔹 Extract userId from request body
+
+//     console.log(
+//       `📩 User(${userId}) updating request(${requestId}) to: ${status}`
+//     );
+
+//     if (!userId || !requestId || !status) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "User ID, request ID, or status is missing!",
+//       });
+//     }
+
+//     console.log(
+//       `User(${userId}) updating request(${requestId}) to status: ${status}`
+//     );
+
+//     const request = await Request.findById(requestId);
+//     if (!request) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "Request not found!" });
+//     }
+
+//     // Check if the logged-in user is sender or receiver
+//     const isSender = request.sender.toString() === userId;
+//     const isReceiver = request.receiver.toString() === userId;
+
+//     if (!isSender && !isReceiver) {
+//       return res.status(403).json({
+//         success: false,
+//         message: "You are not authorized to update this request.",
+//       });
+//     }
+
+//     // Prevent changing to the same status
+//     if (request.status === status) {
+//       return res.status(400).json({
+//         success: false,
+//         message: `Request is already '${status}'!`,
+//       });
+//     }
+
+//     if (status === "completed") {
+//       // Both sender and receiver can mark completed independently
+//       if (isSender) request.completedBySender = true;
+//       if (isReceiver) request.completedByReceiver = true;
+
+//       if (request.completedBySender && request.completedByReceiver) {
+//         request.status = "completed";
+//       }
+
+//       await request.save();
+//       return request;
+//     }
+
+//     // Only receiver can reject or accept
+//     if (status === "rejected" || status === "accepted") {
+//       if (!isReceiver) {
+//         throw new Error("Only receiver can reject/accept the request");
+//       }
+//       request.status = status; // set status to either 'rejected' or 'accepted'
+//       await request.save();
+//       return request;
+//     }
+
+//     // Only sender can cancel
+//     if (status === "cancelled") {
+//       if (!isSender) {
+//         throw new Error("Only sender can cancel the request");
+//       }
+//       request.status = "cancelled";
+//       await request.save();
+//       return request;
+//     }
+
+//     console.log("Status Updated successfully !!")
+//     return res.status(200).json({
+//       success: true,
+//       message: `✅ Request '${status}' successfully updated!`,
+//     });
+//   } catch (error) {
+//     console.log(error, "error from update request status");
+//     return res.status(500).json({
+//       success: false,
+//       message: "🚨 Error updating request!",
+//       error: error.message,
+//     });
+//   }
+// };
+
 const updateRequestStatusMobile = async (req, res) => {
   try {
-    const { userId, requestId, status } = req.body; // 🔹 Extract userId from request body
+    const { userId, requestId, status } = req.body;
 
-    console.log(
-      `📩 User(${userId}) updating request(${requestId}) to: ${status}`
-    );
+    console.log(`📩 Incoming Request Update ➜ User(${userId}) | Request(${requestId}) | New Status: ${status}`);
 
+    // 🔍 Basic input validation
     if (!userId || !requestId || !status) {
+      console.warn(`⚠️ Missing fields ➜ userId: ${userId}, requestId: ${requestId}, status: ${status}`);
       return res.status(400).json({
         success: false,
         message: "User ID, request ID, or status is missing!",
       });
     }
 
-    console.log(
-      `User(${userId}) updating request(${requestId}) to status: ${status}`
-    );
-
-    // const user = await User.findOne({
-    //   $or: [
-    //     { _id: userId, "sended_requests.requestId": requestId },
-    //     { _id: userId, "received_requests.requestId": requestId },
-    //   ],
-    // });
-
-    // if (!user) {
-    //   return res
-    //     .status(404)
-    //     .json({ success: false, message: "❌ Request not found!" });
-    // }
-
-    // if (!user.sended_requests || !user.received_requests) {
-    //   console.error("User request lists are undefined");
-    //   return res
-    //     .status(400)
-    //     .json({ success: false, message: "Invalid user data" });
-    // }
-
-    // const isSender = user.sended_requests.some(
-    //   (r) => r.requestId && r.requestId.toString() === requestId
-    // );
-    // console.log(isSender, "is sender");
-
-    // const isReceiver = user.received_requests.some(
-    //   (r) => r.requestId && r.requestId.toString() === requestId
-    // );
-    // console.log(isReceiver, "is receiver");
-
-    // if (!isSender && !isReceiver) {
-    //   return res.status(404).json({
-    //     success: false,
-    //     message: "❌ Request not found in user data!",
-    //   });
-    // }
-
-    // // 🚫 Prevent changing to the same status
-    // const requestField = isSender ? "sended_requests" : "received_requests";
-    // console.log(
-    //   requestField,
-    //   "request field===================================="
-    // );
-
-    // const request = user[requestField].find(
-    //   (r) => r.requestId.toString() === requestId
-    // );
-
-    // if (request.status === status) {
-    //   return res.status(400).json({
-    //     success: false,
-    //     message: `⚠️ Request is already '${status}'!`,
-    //   });
-    // }
-
-    // console.log(
-    //   request,
-    //   "request--------------------------------------------------------"
-    // );
-
-    // let updateQueries = [];
-
-    // if (status === "cancelled") {
-    //   updateQueries = [
-    //     User.updateOne(
-    //       { _id: userId, "received_requests.requestId": requestId },
-    //       { $set: { "received_requests.$.status": status } }
-    //     ),
-    //     User.updateOne(
-    //       { "sended_requests.requestId": requestId },
-    //       { $set: { "sended_requests.$.status": status } }
-    //     ),
-    //   ];
-    // } else if (status === "rejected" || status === "accepted") {
-    //   updateQueries = [
-    //     // ✅ Update receiver's received_requests (user is rejecting the request)
-    //     User.updateOne(
-    //       { _id: userId, "received_requests.requestId": requestId },
-    //       { $set: { "received_requests.$.status": status } }
-    //     ),
-    //     // ✅ Update sender's sended_requests (their request is being rejected)
-    //     User.updateOne(
-    //       { _id: request.user, "sended_requests.requestId": requestId },
-    //       { $set: { "sended_requests.$.status": status } }
-    //     ),
-    //   ];
-    // } else if (status === "completed") {
-    //   // ✅ Update only the user making the request when completed
-    //   updateQueries = [
-    //     User.updateOne(
-    //       { _id: userId, [`${requestField}.requestId`]: requestId },
-    //       { $set: { [`${requestField}.$.status`]: status } }
-    //     ),
-    //   ];
-    // }
-    // // Run updates in parallel and wait for both to complete
-    // const [userUpdate, otherUserUpdate] = await Promise.all(updateQueries);
-
-    // // If both updates failed, return error
-    // if (!userUpdate.modifiedCount && !otherUserUpdate.modifiedCount) {
-    //   return res
-    //     .status(400)
-    //     .json({ success: false, message: "❌ Request update failed!" });
-    // }
-
-    // // Fetch sender and receiver details for notification
-    // const sender = await User.findById(request.user);
-    // const receiver = await User.findById(userId);
-
-    // if (sender && receiver && sender.fcmToken) {
-    //   const notification = {
-    //     senderName: receiver.name,
-    //     fcmToken: sender.fcmToken,
-    //     title: "Request Status Updated",
-    //     message: `${receiver.name} has updated the request status to '${status}'.`,
-    //     receiverId: sender._id,
-    //   };
-    //   console.log(notification, "n");
-    //   await sendNotification(notification);
-    // }
-
+    // 🔍 Fetch the request
     const request = await Request.findById(requestId);
     if (!request) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Request not found!" });
+      console.warn(`❌ Request(${requestId}) not found!`);
+      return res.status(404).json({
+        success: false,
+        message: "Request not found!",
+      });
     }
 
-    // Check if the logged-in user is sender or receiver
     const isSender = request.sender.toString() === userId;
     const isReceiver = request.receiver.toString() === userId;
 
+    console.log(`👥 Role Check ➜ isSender: ${isSender}, isReceiver: ${isReceiver}`);
+
+    // 🔐 Authorization check
     if (!isSender && !isReceiver) {
+      console.warn(`⛔ Unauthorized user(${userId}) tried to update request(${requestId})`);
       return res.status(403).json({
         success: false,
         message: "You are not authorized to update this request.",
       });
     }
 
-    // Prevent changing to the same status
+    // 🔁 Avoid duplicate updates
     if (request.status === status) {
+      console.info(`🔄 No update needed ➜ Status already '${status}'`);
       return res.status(400).json({
         success: false,
         message: `Request is already '${status}'!`,
       });
     }
 
+    // ✅ Handle 'completed' update
     if (status === "completed") {
-      // Both sender and receiver can mark completed independently
       if (isSender) request.completedBySender = true;
       if (isReceiver) request.completedByReceiver = true;
 
+      console.log(`✅ Marking 'completed' ➜ Sender Done: ${request.completedBySender}, Receiver Done: ${request.completedByReceiver}`);
+
       if (request.completedBySender && request.completedByReceiver) {
-        request.status = "completed";
+        request.status = "rated";
+        console.log(`🎉 Request(${requestId}) fully completed.`);
       }
 
       await request.save();
-      return request;
+      console.log(`💾 Request(${requestId}) saved after completion update`);
+      return res.status(200).json({
+        success: true,
+        message: `✅ Request marked as 'completed'`,
+      });
     }
 
-    // Only receiver can reject or accept
+    // 🔁 Handle 'rejected' or 'accepted'
     if (status === "rejected" || status === "accepted") {
       if (!isReceiver) {
-        throw new Error("Only receiver can reject/accept the request");
+        console.warn(`⛔ Unauthorized reject/accept ➜ Only receiver can perform this`);
+        return res.status(403).json({
+          success: false,
+          message: "Only receiver can reject/accept the request.",
+        });
       }
-      request.status = status; // set status to either 'rejected' or 'accepted'
+
+      request.status = status;
       await request.save();
-      return request;
+      console.log(`✅ Request(${requestId}) updated to '${status}' by Receiver(${userId})`);
+      return res.status(200).json({
+        success: true,
+        message: `✅ Request '${status}' successfully updated!`,
+      });
     }
 
-    // Only sender can cancel
+    // 🔁 Handle 'cancelled'
     if (status === "cancelled") {
       if (!isSender) {
-        throw new Error("Only sender can cancel the request");
+        console.warn(`⛔ Unauthorized cancel ➜ Only sender can cancel`);
+        return res.status(403).json({
+          success: false,
+          message: "Only sender can cancel the request.",
+        });
       }
+
       request.status = "cancelled";
       await request.save();
-      return request;
+      console.log(`✅ Request(${requestId}) cancelled by Sender(${userId})`);
+      return res.status(200).json({
+        success: true,
+        message: `✅ Request 'cancelled' successfully.`,
+      });
     }
 
-    return res.status(200).json({
-      success: true,
-      message: `✅ Request '${status}' successfully updated!`,
+    console.warn(`⚠️ Unknown status value received: '${status}'`);
+    return res.status(400).json({
+      success: false,
+      message: `Invalid status value: '${status}'`,
     });
+
   } catch (error) {
-    console.log(error, "error from update request status");
+    console.error(`🚨 Error updating request(${req.body?.requestId}):`, error);
     return res.status(500).json({
       success: false,
       message: "🚨 Error updating request!",
@@ -1135,6 +1137,7 @@ const updateRequestStatusMobile = async (req, res) => {
     });
   }
 };
+
 
 const getSendedRequestsMobile = async (req, res) => {
   try {

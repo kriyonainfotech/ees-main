@@ -460,11 +460,11 @@ const addRatingMobile = async (req, res) => {
       return res.status(403).json({ message: "❌ Unauthorized to rate" });
     }
 
-    if (request.status !== "completed" && request.status !== "rated") {
-      return res.status(400).json({
-        message: "❌ Rating is allowed only after completion",
-      });
-    }
+    // if (request.status !== "completed" && request.status !== "rated") {
+    //   return res.status(400).json({
+    //     message: "❌ Rating is allowed only after completion",
+    //   });
+    // }
 
     const now = new Date();
 
@@ -542,12 +542,13 @@ const addRatingMobile = async (req, res) => {
     await User.findByIdAndUpdate(ratedUserId, updateField);
 
     // If both ratings are done, mark request as "rated"
-    if (
-      request.providerRatingbySender?.value &&
-      request.userRatingbyprovider?.value
-    ) {
-      request.status = "rated";
-    }
+    // if (
+    //   request.providerRatingbySender?.value &&
+    //   request.userRatingbyprovider?.value
+    // ) {
+    //   request.status = "rated";
+    // }
+    request.status = "rated";
 
     await request.save();
 
