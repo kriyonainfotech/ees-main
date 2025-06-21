@@ -97,11 +97,9 @@ const Senedrequest = ({ sendedRequest, setSendedRequest }) => {
       toast.error("Failed to update request status");
     }
   };
-
   const openModal = (request) => {
     setSelectedRequest(request);
   };
-
   const closeModal = () => {
     setSelectedRequest(null);
     setRating(0);
@@ -204,88 +202,6 @@ const Senedrequest = ({ sendedRequest, setSendedRequest }) => {
                     {send.status || "Pending"}
                   </span>
                 </div>
-                {/* <div className="p-3">
-                  <h4 className="text-lg font-semibold text-gray-900">
-                    {send.name || "Unknown User"}
-                  </h4>
-                  <p className="text-sm text-gray-600">
-                    {send.email || "No email provided"}
-                  </p>
-
-                  <div className="flex justify-between items-center mt-2">
-                    <p className="text-orange-600 text-sm font-medium capitalize">
-                      {send.businessCategory?.join(", ") || "N/A"}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {format(new Date(send.date), "PPpp")}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center mt-2 text-sm">
-                    <span className="text-gray-800 pe-2">User Rating:</span>
-                    {renderStars(send?.providerrating?.value || 0, 10)}
-                    <span className="ml-1 text-gray-700">
-                      {send?.providerrating?.value || 0}
-                    </span>
-                  </div>
-
-                  <div className="mt-4 flex gap-2">
-                    {send.status === "pending" && (
-                      <>
-                        <a
-                          href={`tel:${send.phone}`}
-                          className="flex-1 text-sm flex items-center justify-center gap-2 p-1 text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-                        >
-                          <FaPhone /> Contact Now
-                        </a>
-                        <button
-                          className="p-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                          onClick={() => cancelRequest(send.requestId)}
-                        >
-                          Delete
-                        </button>
-                      </>
-                    )}
-                    {send.status === "accepted" && (
-                      <>
-                        <a
-                          href={`tel:${send.phone}`}
-                          className="flex-1 flex items-center justify-center gap-2 p-2 text-sm text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-                        >
-                          <FaPhone /> Contact Now
-                        </a>
-                        <button
-                          className="p-2 bg-blue-600  text-sm text-white rounded-lg hover:bg-blue-700 transition"
-                          onClick={() =>
-                            handleAction(
-                              send.receiverId,
-                              send.requestId,
-                              "completed"
-                            )
-                          }
-                        >
-                          Completed
-                        </button>
-                      </>
-                    )}
-                    {send.status === "completed" && (
-                      <button
-                        className="p-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition"
-                        onClick={() => openModal(send)}
-                      >
-                        Rate User
-                      </button>
-                    )}
-                    {send.status === "cancelled" && (
-                      <button
-                        className="p-2 w-100 bg-red-600 text-white rounded-lg hover:bg-red-900 transition"
-                        onClick={() => cancelRequest(send.requestId)}
-                      >
-                        Delete Request
-                      </button>
-                    )}
-                  </div>
-                </div> */}
 
                 <div className="p-3 w-full sm:w-full">
                   <h4 className="text-lg font-semibold text-gray-900">

@@ -40,61 +40,38 @@ const SearchResult = ({ Usersdata, token }) => {
     ));
   };
 
-  useEffect(() => {
-    const fetchRequests = async () => {
-      setLoading(true);
-      try {
-        const response = await axios.get(
-          `${backend_API}/request/getUserRequests`,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+  // useEffect(() => {
+  //   const fetchRequests = async () => {
+  //     setLoading(true);
+  //     try {
+  //       const response = await axios.get(
+  //         `${backend_API}/request/getUserRequests`,
+  //         {
+  //           headers: {
+  //             "Content-Type": "application/json",
+  //             Authorization: `Bearer ${token}`,
+  //           },
+  //         }
+  //       );
 
-        console.log(response.data.requests);
+  //       console.log(response.data.requests);
 
-        if (response.status === 200 && response.data.requests) {
-          setAllRequest(response.data.requests);
-
-          // const sendedRequests = response.data.requests.sended_requests || [];
-          // const receivedRequests = response.data.requests.received_requests || [];
-
-          // Check if ANY request is pending or accepted
-          // const hasPendingOrAcceptedRequest = sendedRequests.some(
-          //     req => req.status === "pending" || req.status === "accepted"
-          // );
-
-          // Determine the correct request status for the selected user
-          // let status = null;
-          // const userRequests = sendedRequests.filter(req => req.user?._id === Usersdata?._id);
-          // if (userRequests.some(req => req.status === "pending")) {
-          //     status = "pending";
-          // } else if (userRequests.some(req => req.status === "accepted")) {
-          //     status = "accepted";
-          // } else if (userRequests.some(req => req.status === "completed" || req.status === "rated")) {
-          //     status = "completed";
-          // }
-
-          setRequestStatus(status);
-          // setHasPendingOrAcceptedRequest(hasPendingOrAcceptedRequest); // Store global pending/accepted status
-          // console.log("Updated Request Status:", status);
-          // console.log("Global Pending/Accepted Request Exists:", hasPendingOrAcceptedRequest);
-        }
-      } catch (error) {
-        console.error(
-          "Error fetching requests:",
-          error.response?.data || error.message
-        );
-        toast(error?.response?.data?.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchRequests();
-  }, [Usersdata, token]);
+  //       if (response.status === 200 && response.data.requests) {
+  //         setAllRequest(response.data.requests);
+  //         setRequestStatus(status)
+  //       }
+  //     } catch (error) {
+  //       console.error(
+  //         "Error fetching requests:",
+  //         error.response?.data || error.message
+  //       );
+  //       toast(error?.response?.data?.message);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchRequests();
+  // }, [Usersdata, token]);
 
   const sendRequest = async (
     userId,

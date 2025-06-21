@@ -22,15 +22,15 @@ const OfferModal = ({ BannerUser, offerImage, closeModal, allBanners, initialBan
   const [currentOffer, setCurrentOffer] = useState(null);
   const [popupVisible, setPopupVisible] = useState(false); // 🔥 Contact Now modal state
 
-  console.log("Current Offer:", BannerUser);
-  console.log("User Data:", currentOffer?.userId);
-  console.log("Profile Pic:", currentOffer?.userId?.profilePic);
+  // console.log("Current Offer:", BannerUser);
+  // console.log("User Data:", currentOffer?.userId);
+  // console.log("Profile Pic:", currentOffer?.userId?.profilePic);
   useEffect(() => {
     if (allBanners?.length > 0 && initialBannerId) {
       const foundIndex = allBanners.findIndex(b => b._id === initialBannerId);
       setCurrentIndex(foundIndex !== -1 ? foundIndex : 0);
     }
-  }, [initialBannerId, allBanners]); // Use initialBannerId to find the correct banner
+  }, [initialBannerId, allBanners]);
 
   useEffect(() => {
     if (allBanners?.length > 0) {

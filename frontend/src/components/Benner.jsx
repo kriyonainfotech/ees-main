@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { EffectCoverflow, Navigation, Autoplay } from 'swiper/modules';
-import { FaArrowRight } from "react-icons/fa";
 import 'swiper/css';
 import 'swiper/css/effect-coverflow';
 import "../assets/Banner/Banner.css";
@@ -123,14 +122,6 @@ const Banner = ({ BannerImage, setBannerImage }) => {
                                     />
                                 </SwiperSlide>
                             ))}
-                            {/* <div className="slider-controler">
-                                <div className="swiper-button-prev">
-                                    <ArrowLeft size={20} />
-                                </div>
-                                <div className="swiper-button-next">
-                                    <ArrowRight size={20} />
-                                </div>
-                            </div> */}
                         </Swiper>
                     </div>
                 )}
@@ -152,3 +143,4 @@ const Banner = ({ BannerImage, setBannerImage }) => {
 
 
 export default Banner;
+

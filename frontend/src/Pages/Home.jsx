@@ -457,20 +457,20 @@ const Home = () => {
 
             {(!user?.profilePic ||
               user.profilePic.trim() === DEFAULT_PROFILE_PIC) && (
-              <>
-                <p className="py-2">
-                  <span style={{ fontWeight: "bold" }}>Step 1:</span> Go to your{" "}
-                  <strong>Profile Page</strong> and click the{" "}
-                  <strong>Edit Profile</strong> button at end of Profile page.
-                </p>
-                <p className="py-3">
-                  <span style={{ fontWeight: "bold" }}>Step 2:</span> Select a
-                  new image by clicking on the profile picture, choose the image
-                  you want to upload, and click <strong>Save</strong> to update
-                  your profile picture.
-                </p>
-              </>
-            )}
+                <>
+                  <p className="py-2">
+                    <span style={{ fontWeight: "bold" }}>Step 1:</span> Go to your{" "}
+                    <strong>Profile Page</strong> and click the{" "}
+                    <strong>Edit Profile</strong> button at end of Profile page.
+                  </p>
+                  <p className="py-3">
+                    <span style={{ fontWeight: "bold" }}>Step 2:</span> Select a
+                    new image by clicking on the profile picture, choose the image
+                    you want to upload, and click <strong>Save</strong> to update
+                    your profile picture.
+                  </p>
+                </>
+              )}
 
             {/* {(!user?.frontAadhar ||
               !user?.backAadhar ||
