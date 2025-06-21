@@ -160,26 +160,55 @@ const sentRequest = async (req, res) => {
   }
 };
 
+// const getUserRequests = async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+
+//     const user = await User.findById(userId)
+//       .select("sended_requests received_requests")
+//       .populate("sended_requests.user", "name email")
+//       .populate("received_requests.user", "name email");
+
+//     if (!user)
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "User not found" });
+
+//     res.json({
+//       success: true,
+//       requests: user,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching user requests:", error);
+//     res.status(500).json({ success: false, message: "Server error" });
+//   }
+// };
+
 const getUserRequests = async (req, res) => {
   try {
     const userId = req.user.id;
+    console.log("🔍 Fetching all requests for user:", userId);
 
-    const user = await User.findById(userId)
-      .select("sended_requests received_requests")
-      .populate("sended_requests.user", "name email")
-      .populate("received_requests.user", "name email");
+    // 🔄 Fetch sent and received requests
+    const [sended, received] = await Promise.all([
+      Request.find({ sender: userId })
+        .populate("receiver", "name email")
+        .sort({ createdAt: -1 }),
 
-    if (!user)
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+      Request.find({ receiver: userId })
+        .populate("sender", "name email")
+        .sort({ createdAt: -1 }),
+    ]);
+
+    console.log(`📨 Sent: ${sended.length}, 📥 Received: ${received.length}`);
 
     res.json({
       success: true,
-      requests: user,
+      sended,
+      received,
     });
   } catch (error) {
-    console.error("Error fetching user requests:", error);
+    console.error("🔥 Error in getUserRequests:", error.message);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
@@ -541,113 +570,6 @@ const getReceivedRequests = async (req, res) => {
   }
 };
 
-// const deleteRequest = async (req, res) => {
-//   try {
-//     const { requestId, userId } = req.body;
-
-//     console.log("🔹 Incoming delete request:", { requestId, userId });
-
-//     if (!requestId || !userId) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Request ID and User ID are required.",
-//       });
-//     }
-
-//     if (
-//       !mongoose.Types.ObjectId.isValid(requestId) ||
-//       !mongoose.Types.ObjectId.isValid(userId)
-//     ) {
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "Invalid request or user ID." });
-//     }
-
-//     // Fetch user to check if they are sender or receiver
-//     const user = await User.findById(userId).select(
-//       "sended_requests received_requests"
-//     );
-
-//     if (!user) {
-//       return res
-//         .status(404)
-//         .json({ success: false, message: "User not found." });
-//     }
-
-//     let senderId = null,
-//       receiverId = null;
-
-//     const sentRequest = user.sended_requests.find(
-//       (req) => req.requestId.toString() === requestId
-//     );
-//     if (sentRequest) {
-//       senderId = userId;
-//       receiverId = sentRequest.user.toString();
-//     }
-
-//     const receivedRequest = user.received_requests.find(
-//       (req) => req.requestId.toString() === requestId
-//     );
-//     if (receivedRequest) {
-//       receiverId = userId;
-//       senderId = receivedRequest.user.toString();
-//     }
-
-//     if (!senderId || !receiverId) {
-//       return res
-//         .status(404)
-//         .json({ success: false, message: "Request not found." });
-//     }
-
-//     console.log("✅ Found request. Sender:", senderId, "Receiver:", receiverId);
-
-//     // Remove request from sender's `sended_requests`
-//     const senderUpdate = await User.updateOne(
-//       { _id: senderId },
-//       {
-//         $pull: {
-//           sended_requests: {
-//             requestId: new mongoose.Types.ObjectId(requestId),
-//           },
-//         },
-//       }
-//     );
-
-//     // Remove request from receiver's `received_requests`
-//     const receiverUpdate = await User.updateOne(
-//       { _id: receiverId },
-//       {
-//         $pull: {
-//           received_requests: {
-//             requestId: new mongoose.Types.ObjectId(requestId),
-//           },
-//         },
-//       }
-//     );
-
-//     console.log("🔹 Sender Update Result:", senderUpdate);
-//     console.log("🔹 Receiver Update Result:", receiverUpdate);
-
-//     if (!senderUpdate.modifiedCount && !receiverUpdate.modifiedCount) {
-//       return res
-//         .status(404)
-//         .json({ success: false, message: "Request not found in DB." });
-//     }
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "Request deleted successfully from both users.",
-//     });
-//   } catch (error) {
-//     console.error("❌ Error deleting request:", error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "An error occurred while deleting the request.",
-//       error: error.message,
-//     });
-//   }
-// };
-
 const deleteRequest = async (req, res) => {
   try {
     const { requestId, userId } = req.body;
@@ -692,6 +614,7 @@ const deleteRequest = async (req, res) => {
     }
 
     await Request.deleteOne({ _id: requestId });
+    console.log("Request deleted successfully.")
 
     return res.status(200).json({
       success: true,
