@@ -582,20 +582,52 @@ const AllUsers = () => {
   const [filter, setFilter] = useState("");
   const navigate = useNavigate();
 
-  const fetchData = async () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [limit, setLimit] = useState(10); // default limit
+
+
+
+  // const fetchData = async () => {
+  //   try {
+  //     const response = await axios.get(`${backend_API}/auth/getAllUser`);
+  //     console.log(response.data, "response.data");
+  //     const filteredUsers = response.data.user.filter(
+  //       (user) => user.isAdminApproved === true
+  //     );
+  //     // console.log(filteredUsers, "filteredUsers");
+  //     setUserList(filteredUsers);
+  //   } catch (error) {
+  //     console.error("Error:", error.message);
+  //     toast(error?.response?.data?.message);
+  //   }
+  // };
+
+  const fetchData = async (page = 1, limit = 10) => {
     try {
-      const response = await axios.get(`${backend_API}/auth/getAllUser`);
-      console.log(response.data, "response.data");
-      const filteredUsers = response.data.user.filter(
-        (user) => user.isAdminApproved === true
-      );
-      // console.log(filteredUsers, "filteredUsers");
+      const response = await axios.get(`${backend_API}/auth/getAllUser`, {
+        params: { page, limit },
+      });
+
+      const { users, totalPages, totalUsers, currentPage } = response.data.data;
+
+      // Filter approved users
+      const filteredUsers = users.filter(user => user.isAdminApproved === true);
+
       setUserList(filteredUsers);
+      setTotalPages(totalPages);   // <-- for pagination UI
+      setCurrentPage(currentPage); // <-- optional
+
     } catch (error) {
       console.error("Error:", error.message);
-      toast(error?.response?.data?.message);
+      toast(error?.response?.data?.message || "Something went wrong");
     }
   };
+
+  useEffect(() => {
+    fetchData(currentPage, limit);
+  }, [currentPage, limit]);
+
 
   const deleteUser = async (uid) => {
     toast.info(
@@ -674,7 +706,7 @@ const AllUsers = () => {
       console.error("Error fetching referred user:", error.message);
       toast(
         error?.response?.data?.message ||
-          "Failed to fetch referred user details"
+        "Failed to fetch referred user details"
       );
     }
   };
@@ -729,9 +761,9 @@ const AllUsers = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredUsers.reverse().map((user, index) => (
+                    {userList.map((user, index) => (
                       <tr key={user._id}>
-                        <th>{index + 1}</th>
+                        <th>{(currentPage - 1) * limit + index + 1}</th>
                         <td className="text-sm">
                           {new Date(user.createdAt).toLocaleString()}
                         </td>
@@ -821,6 +853,28 @@ const AllUsers = () => {
                   </tbody>
                 </table>
               </div>
+              <div className="flex justify-between items-center mt-4 px-4">
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  ⬅️ Prev
+                </button>
+
+                <span className="text-sm font-semibold">
+                  Page {currentPage} of {totalPages}
+                </span>
+
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next ➡️
+                </button>
+              </div>
+
             </div>
           </div>
         </section>

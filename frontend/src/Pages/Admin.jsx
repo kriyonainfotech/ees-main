@@ -8,20 +8,17 @@ import ManageCatagory from '../adminPages/ManageCatagory'
 
 const Admin = () => {
   return (
-  <>
- <div className=''>
- <AdminHeader/>
- <AdminSidebar/>
- <AllUsers/>
- <Routes>
- <Route path="/admin/editUser" element={<EditUser />} />
- <Route path="/admin/manageCategory" element={<ManageCatagory />} />
-
- 
-
- </Routes>
- </div>
-  </>
+    <>
+      <div className=''>
+        <AdminHeader />
+        <AdminSidebar />
+        <AllUsers />
+        <Routes>
+          <Route path="/admin/editUser" element={<EditUser />} />
+          <Route path="/admin/manageCategory" element={<ManageCatagory />} />
+        </Routes>
+      </div>
+    </>
   )
 }
 

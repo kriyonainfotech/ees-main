@@ -64,7 +64,7 @@ const RatingModal = ({ target, onClose, setData, userRole }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-40">
             <div className="bg-white p-5 rounded-lg w-96">
                 <h3 className="text-lg font-bold mb-3">Rate {target.name}</h3>
 

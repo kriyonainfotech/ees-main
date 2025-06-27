@@ -1,4 +1,5 @@
 const UserModel = require("../model/user");
+const Banner = require("../model/banner");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
@@ -608,6 +609,14 @@ const loginUserweb = async (req, res) => {
       "name phone isAdminApproved password role"
     );
 
+    // 🚫 Check if soft-deleted
+    if (user.isDeleted) {
+      return res.status(403).send({
+        success: false,
+        message: "Account has been deleted. Please contact support if this is a mistake.",
+      });
+    }
+
     // Step 4: Check admin approval
     if (!user.isAdminApproved) {
       return res.status(403).send({
@@ -670,7 +679,6 @@ const loginUserweb = async (req, res) => {
   }
 };
 
-
 const getAdmin = async (req, res) => {
   try {
     res.status(200).send({
@@ -688,25 +696,67 @@ const getAdmin = async (req, res) => {
   }
 };
 
+// without pagination
+// const getalluser = async (req, res) => {
+//   try {
+//     const user = await UserModel.find({ isDeleted: { $ne: true } })
+//       .populate("referredBy", "name phone")
+//       .populate(
+//         "ekyc",
+//         "bankProof panCardback panCardfront bankAccountNumber accountHolderName ifscCode status"
+//       );
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Users fetched successfully.",
+//       user,
+//     });
+//   } catch (error) {
+//     return res.status(500).send({
+//       success: false,
+//       message: "An error occurred while fetching users",
+//       error: error.message,
+//     });
+//   }
+// };
+
+// with pagination
 const getalluser = async (req, res) => {
   try {
-    const user = await UserModel.find({})
-      .select("-received_requests -sended_requests")
-      .populate("referredBy", "name phone")
-      .populate(
-        "ekyc",
-        "bankProof panCardback panCardfront bankAccountNumber accountHolderName ifscCode status"
-      );
+    const page = parseInt(req.query.page) || 1;         // default page 1
+    const limit = parseInt(req.query.limit) || 10;      // default 10 users per page
+    const skip = (page - 1) * limit;
+
+    const [users, totalUsers] = await Promise.all([
+      UserModel.find({ isDeleted: { $ne: true } })
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 }) // optional: newest users first
+        .populate("referredBy", "name phone")
+        .populate(
+          "ekyc",
+          "bankProof panCardback panCardfront bankAccountNumber accountHolderName ifscCode status"
+        ),
+
+      UserModel.countDocuments({ isDeleted: { $ne: true } }) // total count
+    ]);
+
+    const totalPages = Math.ceil(totalUsers / limit);
 
     return res.status(200).json({
       success: true,
-      message: "Users fetched successfully.",
-      user,
+      message: "Users fetched with pagination.",
+      data: {
+        users,
+        totalUsers,
+        totalPages,
+        currentPage: page,
+      },
     });
   } catch (error) {
-    return res.status(500).send({
+    return res.status(500).json({
       success: false,
-      message: "An error occurred while fetching users",
+      message: "An error occurred while fetching users.",
       error: error.message,
     });
   }
@@ -715,8 +765,7 @@ const getalluser = async (req, res) => {
 const getUser = async (req, res) => {
   try {
     const id = req.user.id;
-    const user = await UserModel.findById(id)
-      .select("-received_requests -sended_requests")
+    const user = await UserModel.findOne({ _id: id, isDeleted: { $ne: true } })
       .populate("ekyc");
     if (!user) {
       return res.status(404).json({
@@ -748,9 +797,8 @@ const getUserMobile = async (req, res) => {
       });
     }
 
-    const user = await UserModel.findById(userId).select(
-      "-received_requests -sended_requests"
-    );
+    const user = await UserModel.findOne({ _id: userId, isDeleted: { $ne: true } })
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -1056,21 +1104,13 @@ const deleteUser = async (req, res) => {
     const userId = req.body.id;
     console.log(req.body, "userId im delete user")
     const user = await UserModel.findById(userId).populate("ekyc");
+
     if (!user) {
       console.log("User Not Found")
       return res.status(404).send({ success: false, message: "User not found" });
     }
 
     console.log(`[INFO] 🔄 Removing user-related data for user: ${userId}`);
-
-    // 2. Withdraw user from referrer’s referral list
-    if (user.referredBy) {
-      await UserModel.updateOne(
-        { _id: user.referredBy },
-        { $pull: { referrals: userId } }
-      );
-      console.log("[INFO] ✅ Removed user from referrer’s referral list");
-    }
 
     // 3. Collect all images to delete
     const userImages = [];
@@ -1090,24 +1130,52 @@ const deleteUser = async (req, res) => {
       console.log("[INFO] ✅ Deleted eKYC document");
     }
 
-    // 5. Delete withdrawal documents (assumed model: WithdrawModel)
     // 5. Delete withdrawal documents (no proofImage field now)
     await WithdrawModel.deleteMany({ user: userId });
     console.log("[INFO] ✅ Deleted all withdrawal records for the user");
 
+    // 5.5. Delete user's banners and banner images
+    const userBanners = await Banner.find({ userId: userId });
+
+    if (userBanners.length) {
+      const bannerImages = userBanners.map((banner) => banner.imageUrl);
+
+      // Delete banner images from S3
+      await Promise.all(bannerImages.map((key) => deleteS3File(key)));
+      console.log("[INFO] ✅ Deleted user's banner images from AWS");
+
+      // Delete banner documents
+      await Banner.deleteMany({ userId: userId });
+      console.log("[INFO] ✅ Deleted all banner documents for the user");
+    }
 
     // 6. Delete all collected images from AWS
     await Promise.all(userImages.map((key) => deleteS3File(key)));
     console.log("[INFO] ✅ Deleted all user's images from AWS");
 
-    // 7. Delete user
-    await UserModel.findByIdAndDelete(userId);
-    console.log("[SUCCESS] 🚀 User deleted successfully");
+    // 7. Soft delete user and nullify sensitive fields
+    const nullifiedFields = {
+      isDeleted: true,
+      userstatus: null,
+      userAverageRating: null,
+      userRatingCount: 0,
+      providerAverageRating: null,
+      providerRatingCount: 0,
+      referralCode: null,
+      notifications: [],
+      profilePic: "",
+      backAadhar: "",
+      frontAadhar: "",
+    };
+
+    await UserModel.findByIdAndUpdate(userId, nullifiedFields);
+    console.log("[SUCCESS] 🚫 User marked as deleted & cleaned");
 
     return res.status(200).send({
       success: true,
-      message: "User deleted successfully",
+      message: "User marked as deleted successfully"
     });
+
   } catch (error) {
     console.log("[ERROR] ❌", error);
     return res.status(500).send({

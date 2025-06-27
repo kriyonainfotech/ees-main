@@ -90,77 +90,6 @@ const userSchema = new mongoose.Schema(
       enum: ["available", "unavailable"], // Allowed values
       default: "available", // Default value
     },
-    // sended_requests: [
-    //   {
-    //     requestId: { type: mongoose.Schema.Types.ObjectId, required: true },
-    //     user: {
-    //       // Renamed for clarity
-    //       type: mongoose.Schema.Types.ObjectId,
-    //       ref: "User",
-    //       required: true,
-    //     },
-    //     status: {
-    //       type: String,
-    //       enum: [
-    //         "pending",
-    //         "accepted",
-    //         "cancelled",
-    //         "rejected",
-    //         "completed",
-    //         "rated",
-    //       ],
-    //       default: "pending",
-    //     },
-    //     date: { type: Date, default: Date.now },
-    //     providerrating: {
-    //       value: { type: Number, min: 1, max: 10, default: null },
-    //       comment: { type: String, default: null },
-    //       date: { type: Date, default: Date.now },
-    //     },
-    //     givenByreceiverRating: {
-    //       value: { type: Number, min: 1, max: 10, default: null },
-    //       comment: { type: String, default: null },
-    //       date: { type: Date, default: Date.now },
-    //     },
-    //   },
-    // ],
-
-    // received_requests: [
-    //   {
-    //     requestId: { type: mongoose.Schema.Types.ObjectId, required: true },
-    //     user: {
-    //       // Renamed for clarity
-    //       type: mongoose.Schema.Types.ObjectId,
-    //       ref: "User",
-    //       required: true,
-    //     },
-    //     status: {
-    //       type: String,
-    //       enum: [
-    //         "pending",
-    //         "accepted",
-    //         "cancelled",
-    //         "rejected",
-    //         "completed",
-    //         "rated",
-    //       ],
-    //       default: "pending",
-    //     },
-    //     date: { type: Date, default: Date.now },
-
-    //     userrating: {
-    //       value: { type: Number, min: 1, max: 10, default: null },
-    //       comment: { type: String, default: null },
-    //       date: { type: Date, default: Date.now },
-    //     },
-    //     givenBysenderRating: {
-    //       value: { type: Number, min: 1, max: 10, default: null },
-    //       comment: { type: String, default: null },
-    //       date: { type: Date, default: Date.now },
-    //     },
-    //   },
-    // ],
-
     userRatings: [
       {
         rater: {
@@ -191,7 +120,6 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-
     providerRatings: [
       {
         rater: {
@@ -274,6 +202,8 @@ const userSchema = new mongoose.Schema(
     resetCodeExpires: { type: Number },
     paymentVerified: { type: Boolean, default: false }, // New field added
     paymentExpiry: { type: Date, default: null },
+
+    isDeleted: { type: Boolean, default: false }
   },
 
   { timestamps: true }
