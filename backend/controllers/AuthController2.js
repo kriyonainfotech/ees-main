@@ -406,11 +406,11 @@ const getPendingeKYCs = async (req, res) => {
     // Filter out users where ekyc is null (i.e., not pending)
     const filteredUsers = pendingUsers.filter((user) => user.ekyc);
 
-    if (filteredUsers.length === 0) {
-      return res
-        .status(404)
-        .json({ success: false, message: "No pending eKYC users found." });
-    }
+    // if (filteredUsers.length === 0) {
+    //   return res
+    //     .status(404)
+    //     .json({ success: false, message: "No pending eKYC users found." });
+    // }
 
     res.status(200).send({
       success: true,

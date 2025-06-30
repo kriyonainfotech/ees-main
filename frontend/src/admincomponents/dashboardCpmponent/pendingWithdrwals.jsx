@@ -145,5 +145,26 @@ const PendingKYCs = () => {
     </div>
   );
 };
+const ActiveRequestsTab = () => {
+  const navigate = useNavigate();
 
-export { PendingWithdrwals, PaidUsersCtn, PendingKYCs };
+  return (
+    <div
+      className="border rounded-xl p-4 bg-white hover:shadow-lg transition duration-300 cursor-pointer"
+      onClick={() => navigate("/admin/activerequest")}
+    >
+      <div className="flex items-center space-x-4">
+        {/* Icon */}
+        <div className="w-8 h-8 flex items-center justify-center bg-green-500 text-white rounded-full">
+        </div>
+
+        {/* Text Content */}
+        <div>
+          <p className="text-gray-600 text-sm font-medium">Active User Request</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export { PendingWithdrwals, PaidUsersCtn, PendingKYCs, ActiveRequestsTab };

@@ -697,70 +697,70 @@ const getAdmin = async (req, res) => {
 };
 
 // without pagination
-// const getalluser = async (req, res) => {
-//   try {
-//     const user = await UserModel.find({ isDeleted: { $ne: true } })
-//       .populate("referredBy", "name phone")
-//       .populate(
-//         "ekyc",
-//         "bankProof panCardback panCardfront bankAccountNumber accountHolderName ifscCode status"
-//       );
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "Users fetched successfully.",
-//       user,
-//     });
-//   } catch (error) {
-//     return res.status(500).send({
-//       success: false,
-//       message: "An error occurred while fetching users",
-//       error: error.message,
-//     });
-//   }
-// };
-
-// with pagination
 const getalluser = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;         // default page 1
-    const limit = parseInt(req.query.limit) || 10;      // default 10 users per page
-    const skip = (page - 1) * limit;
-
-    const [users, totalUsers] = await Promise.all([
-      UserModel.find({ isDeleted: { $ne: true } })
-        .skip(skip)
-        .limit(limit)
-        .sort({ createdAt: -1 }) // optional: newest users first
-        .populate("referredBy", "name phone")
-        .populate(
-          "ekyc",
-          "bankProof panCardback panCardfront bankAccountNumber accountHolderName ifscCode status"
-        ),
-
-      UserModel.countDocuments({ isDeleted: { $ne: true } }) // total count
-    ]);
-
-    const totalPages = Math.ceil(totalUsers / limit);
+    const user = await UserModel.find({ isDeleted: { $ne: true } })
+      .populate("referredBy", "name phone")
+      .populate(
+        "ekyc",
+        "bankProof panCardback panCardfront bankAccountNumber accountHolderName ifscCode status"
+      );
 
     return res.status(200).json({
       success: true,
-      message: "Users fetched with pagination.",
-      data: {
-        users,
-        totalUsers,
-        totalPages,
-        currentPage: page,
-      },
+      message: "Users fetched successfully.",
+      user,
     });
   } catch (error) {
-    return res.status(500).json({
+    return res.status(500).send({
       success: false,
-      message: "An error occurred while fetching users.",
+      message: "An error occurred while fetching users",
       error: error.message,
     });
   }
 };
+
+// with pagination
+// const getalluser = async (req, res) => {
+//   try {
+//     const page = parseInt(req.query.page) || 1;         // default page 1
+//     const limit = parseInt(req.query.limit) || 10;      // default 10 users per page
+//     const skip = (page - 1) * limit;
+
+//     const [users, totalUsers] = await Promise.all([
+//       UserModel.find({ isDeleted: { $ne: true } })
+//         .skip(skip)
+//         .limit(limit)
+//         .sort({ createdAt: -1 }) // optional: newest users first
+//         .populate("referredBy", "name phone")
+//         .populate(
+//           "ekyc",
+//           "bankProof panCardback panCardfront bankAccountNumber accountHolderName ifscCode status"
+//         ),
+
+//       UserModel.countDocuments({ isDeleted: { $ne: true } }) // total count
+//     ]);
+
+//     const totalPages = Math.ceil(totalUsers / limit);
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Users fetched with pagination.",
+//       data: {
+//         users,
+//         totalUsers,
+//         totalPages,
+//         currentPage: page,
+//       },
+//     });
+//   } catch (error) {
+//     return res.status(500).json({
+//       success: false,
+//       message: "An error occurred while fetching users.",
+//       error: error.message,
+//     });
+//   }
+// };
 
 const getUser = async (req, res) => {
   try {

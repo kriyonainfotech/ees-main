@@ -69,7 +69,7 @@ const isAdmin = (req, res, next) => {
           message: "Access denied. Admins only.",
         });
       }
-      req.user = decoded.user;
+      req.user = decoded;
       next();
     });
   } catch (error) {

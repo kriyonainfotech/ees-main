@@ -10,7 +10,7 @@ const SendedRequest = ({ data, setData }) => {
     const [selectedRequest, setSelectedRequest] = useState(null);
 
     return (
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mt-4">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
             {data.length ? (
                 data.map((request, i) => (
                     <RequestCard

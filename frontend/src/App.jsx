@@ -27,6 +27,7 @@ import PaymentReport from "./adminPages/PaymentReport";
 import PendingeKYCs from "./adminPages/PendingeKYCs";
 import YearlyInvestors from "./Pages/YearlyInvestors";
 import MonthlyInvestors from "./Pages/MonthlyInvestors";
+import ActiveRequestsTable from "./adminPages/ActiveRequestsTable";
 
 // Lazy-loaded components
 const Login = lazy(() => import("./components/Login"));
@@ -114,7 +115,6 @@ export default function App() {
                   <Route path="/work" element={<Work />} />
                   <Route path="/wallete" element={<Wallete />} />
                   <Route path="/team" element={<Team />} />
-
                   <Route path="/ViewTickits" element={<SupportTicket />} />
                 </Route>
                 <Route path="/" element={<Home />} />
@@ -133,6 +133,9 @@ export default function App() {
                     </ProtectAdmin>
                   }
                 />
+                <Route path="/admin/activerequest" element={<ProtectAdmin>
+                  <ActiveRequestsTable />
+                </ProtectAdmin>} />
                 <Route
                   path="/admin/users"
                   element={

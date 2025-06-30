@@ -15,7 +15,9 @@ import {
   PendingWithdrwals,
   PaidUsersCtn,
   PendingKYCs,
+  ActiveRequestsTab,
 } from "../admincomponents/dashboardCpmponent/pendingWithdrwals";
+import ActiveRequestsTable from "./ActiveRequestsTable";
 
 const backend_API = import.meta.env.VITE_API_URL;
 
@@ -96,6 +98,10 @@ const Dashboard = () => {
                 </div>
                 <div className="col-12 col-md-6 col-lg-4 p-1">
                   <PaidUsersCtn label="Payment Invoices" />
+                </div>
+                <div className="col-12 col-md-6 col-lg-4 p-1">
+                  {/* <ActiveRequestsTab label="Active Requests" /> */}
+                  <ActiveRequestsTab label="Active Requests" />
                 </div>
               </div>
             </div>

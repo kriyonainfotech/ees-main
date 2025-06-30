@@ -18,7 +18,7 @@ const UserCount = ({ Users }) => {
                 {/* Text Content */}
                 <div>
                     <p className="text-gray-600 text-sm font-medium">Approved Users</p>
-                    <h5 className="text-xl font-semibold">{Users.length}</h5>
+                    <h5 className="text-xl font-semibold">{Users?.length}</h5>
                 </div>
             </div>
         </div>

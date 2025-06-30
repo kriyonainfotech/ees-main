@@ -11,8 +11,9 @@ const {
   getUsersWithRequestsCounts,
   updateRequestStatusMobile,
   getUserRequests,
+  getactiveRequests,
 } = require("../controllers/requestController");
-const { verifyToken } = require("../middleware/auth");
+const { verifyToken, isAdmin } = require("../middleware/auth");
 const userModel = require("../model/user");
 const {
   getNotifications,
@@ -75,5 +76,7 @@ router.delete("/deleteSentRequests", async (req, res) => {
     });
   }
 });
+
+router.get("/activerequests", isAdmin, getactiveRequests);
 
 module.exports = router;

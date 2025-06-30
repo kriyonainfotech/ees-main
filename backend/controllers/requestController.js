@@ -1313,6 +1313,26 @@ const getUsersWithRequestsCounts = async (req, res) => {
   }
 };
 
+const getactiveRequests = async (req, res) => {
+  try {
+
+    const userId = req.user.id;
+    console.log('req.user', userId)
+
+    const activeRequests = await Request.find({
+      status: { $in: ["pending", "accepted"] },
+    })
+      .populate("sender", "name avatar")
+      .populate("receiver", "name avatar")
+      .sort({ updatedAt: -1 }); // latest on top
+
+    return res.status(200).json(activeRequests);
+  } catch (error) {
+    console.error("Error fetching active requests:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
 module.exports = {
   sentRequest,
   sentRequestMobile,
@@ -1324,5 +1344,5 @@ module.exports = {
   getUsersWithRequestsCounts,
   getSendedRequestsMobile,
   getReceivedRequestsMobile,
-  updateRequestStatusMobile,
+  updateRequestStatusMobile, getactiveRequests
 };

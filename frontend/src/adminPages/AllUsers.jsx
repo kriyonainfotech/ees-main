@@ -588,41 +588,41 @@ const AllUsers = () => {
 
 
 
-  // const fetchData = async () => {
-  //   try {
-  //     const response = await axios.get(`${backend_API}/auth/getAllUser`);
-  //     console.log(response.data, "response.data");
-  //     const filteredUsers = response.data.user.filter(
-  //       (user) => user.isAdminApproved === true
-  //     );
-  //     // console.log(filteredUsers, "filteredUsers");
-  //     setUserList(filteredUsers);
-  //   } catch (error) {
-  //     console.error("Error:", error.message);
-  //     toast(error?.response?.data?.message);
-  //   }
-  // };
-
-  const fetchData = async (page = 1, limit = 10) => {
+  const fetchData = async () => {
     try {
-      const response = await axios.get(`${backend_API}/auth/getAllUser`, {
-        params: { page, limit },
-      });
-
-      const { users, totalPages, totalUsers, currentPage } = response.data.data;
-
-      // Filter approved users
-      const filteredUsers = users.filter(user => user.isAdminApproved === true);
-
+      const response = await axios.get(`${backend_API}/auth/getAllUser`);
+      console.log(response.data, "response.data");
+      const filteredUsers = response.data.user.filter(
+        (user) => user.isAdminApproved === true
+      );
+      // console.log(filteredUsers, "filteredUsers");
       setUserList(filteredUsers);
-      setTotalPages(totalPages);   // <-- for pagination UI
-      setCurrentPage(currentPage); // <-- optional
-
     } catch (error) {
       console.error("Error:", error.message);
-      toast(error?.response?.data?.message || "Something went wrong");
+      toast(error?.response?.data?.message);
     }
   };
+
+  // const fetchData = async (page = 1, limit = 10) => {
+  //   try {
+  //     const response = await axios.get(`${backend_API}/auth/getAllUser`, {
+  //       params: { page, limit },
+  //     });
+
+  //     const { users, totalPages, totalUsers, currentPage } = response.data.data;
+
+  //     // Filter approved users
+  //     const filteredUsers = users.filter(user => user.isAdminApproved === true);
+
+  //     setUserList(filteredUsers);
+  //     setTotalPages(totalPages);   // <-- for pagination UI
+  //     setCurrentPage(currentPage); // <-- optional
+
+  //   } catch (error) {
+  //     console.error("Error:", error.message);
+  //     toast(error?.response?.data?.message || "Something went wrong");
+  //   }
+  // };
 
   useEffect(() => {
     fetchData(currentPage, limit);
@@ -761,7 +761,7 @@ const AllUsers = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {userList.map((user, index) => (
+                    {filteredUsers.map((user, index) => (
                       <tr key={user._id}>
                         <th>{(currentPage - 1) * limit + index + 1}</th>
                         <td className="text-sm">
@@ -853,7 +853,7 @@ const AllUsers = () => {
                   </tbody>
                 </table>
               </div>
-              <div className="flex justify-between items-center mt-4 px-4">
+              {/* <div className="flex justify-between items-center mt-4 px-4">
                 <button
                   className="btn btn-secondary"
                   onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
@@ -873,7 +873,7 @@ const AllUsers = () => {
                 >
                   Next ➡️
                 </button>
-              </div>
+              </div> */}
 
             </div>
           </div>
