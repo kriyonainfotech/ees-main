@@ -75,9 +75,9 @@ const Dashboard = () => {
                 <h3 className="">Dashboard</h3>
               </div>
               <div className="col-12 d-flex flex-wrap pt-3">
-                <div className="col-12 p-1">
+                {/* <div className="col-12 p-1">
                   <Investments label="Investments" />
-                </div>
+                </div> */}
                 <div className="col-12 col-md-6 col-lg-4 p-1">
                   <PandingCount
                     pandingcnt={pandingcnt}
