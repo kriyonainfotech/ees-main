@@ -582,9 +582,9 @@ const AllUsers = () => {
   const [filter, setFilter] = useState("");
   const navigate = useNavigate();
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [limit, setLimit] = useState(10); // default limit
+  // const [currentPage, setCurrentPage] = useState(1);
+  // const [totalPages, setTotalPages] = useState(1);
+  // const [limit, setLimit] = useState(10); // default limit
 
 
 
@@ -624,10 +624,9 @@ const AllUsers = () => {
   //   }
   // };
 
-  useEffect(() => {
-    fetchData(currentPage, limit);
-  }, [currentPage, limit]);
-
+  // useEffect(() => {
+  //   fetchData(currentPage, limit);
+  // }, [currentPage, limit]);
 
   const deleteUser = async (uid) => {
     toast.info(
@@ -763,7 +762,8 @@ const AllUsers = () => {
                   <tbody>
                     {filteredUsers.map((user, index) => (
                       <tr key={user._id}>
-                        <th>{(currentPage - 1) * limit + index + 1}</th>
+                        {/* <th>{(currentPage - 1) * limit + index + 1}</th> */}
+                        <th>{index + 1}</th>
                         <td className="text-sm">
                           {new Date(user.createdAt).toLocaleString()}
                         </td>

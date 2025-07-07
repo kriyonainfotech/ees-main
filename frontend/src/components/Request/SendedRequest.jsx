@@ -6,7 +6,7 @@ import { UserContext } from "../../UserContext";
 
 const SendedRequest = ({ data, setData }) => {
     const { user } = useContext(UserContext);
-    // console.log(user, 'user')
+    console.log(data, 'sended data');
     const [selectedRequest, setSelectedRequest] = useState(null);
 
     return (
